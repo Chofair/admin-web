@@ -135,13 +135,13 @@ export default async function MotoristasPage({
                     <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
                       {m.profiles?.name ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 font-mono text-xs">
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100 font-mono text-xs">
                       {formatCPF(m.profiles?.cpf)}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
                       {m.cnh_numero ?? '—'}
                       {m.cnh_validade && (
-                        <span className="ml-1 text-xs text-zinc-400 dark:text-zinc-500">
+                        <span className="ml-1 text-xs text-zinc-600 dark:text-zinc-400">
                           (val: {formatDate(m.cnh_validade)})
                         </span>
                       )}
@@ -155,7 +155,7 @@ export default async function MotoristasPage({
                         {statusLabels[m.status_motorista ?? 'pendente']}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
                       {formatDate(m.created_at)}
                     </td>
                     <td className="px-4 py-3">

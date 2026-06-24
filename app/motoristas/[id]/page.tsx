@@ -219,36 +219,40 @@ export default async function MotoristaDetailPage({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">CPF</p>
-              <p className="font-mono">{formatCPF(profile?.cpf)}</p>
+              <p className="font-mono text-zinc-900">{formatCPF(profile?.cpf)}</p>
             </div>
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">Telefone</p>
-              <p>{profile?.telefone ?? '—'}</p>
+              <p className="text-zinc-900">{profile?.telefone ?? '—'}</p>
             </div>
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">Nascimento</p>
-              <p>{formatDate(profile?.data_nascimento)}</p>
+              <p className="text-zinc-900">{formatDate(profile?.data_nascimento)}</p>
             </div>
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">CNH Número</p>
-              <p>{motorista.cnh_numero ?? '—'}</p>
+              <p className="text-zinc-900">{motorista.cnh_numero ?? '—'}</p>
             </div>
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">CNH Validade</p>
-              <p>{formatDate(motorista.cnh_validade)}</p>
+              <p className="text-zinc-900">{formatDate(motorista.cnh_validade)}</p>
             </div>
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">CNH Categoria</p>
-              <p>{motorista.cnh_categoria ?? '—'}</p>
+              <p className="text-zinc-900">{motorista.cnh_categoria ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-zinc-500 font-medium mb-0.5">Chave PIX</p>
+              <p className="font-mono text-zinc-900">{motorista.chave_pix ?? '—'}</p>
             </div>
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">Cadastro</p>
-              <p>{formatDate(profile?.created_at)}</p>
+              <p className="text-zinc-900">{formatDate(profile?.created_at)}</p>
             </div>
             {motorista.data_aprovacao && (
               <div>
                 <p className="text-zinc-500 font-medium mb-0.5">Aprovado em</p>
-                <p>{formatDate(motorista.data_aprovacao)}</p>
+                <p className="text-zinc-900">{formatDate(motorista.data_aprovacao)}</p>
               </div>
             )}
             <div>
@@ -279,13 +283,13 @@ export default async function MotoristaDetailPage({
               <tbody>
                 {veiculos.map((v) => (
                   <tr key={v.id} className="border-b border-zinc-50">
-                    <td className="px-4 py-3 font-mono font-semibold">{v.placa}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 font-mono font-semibold text-zinc-900">{v.placa}</td>
+                    <td className="px-4 py-3 text-zinc-900">
                       {v.marca} {v.modelo}
                     </td>
-                    <td className="px-4 py-3">{v.ano}</td>
-                    <td className="px-4 py-3">{v.cor}</td>
-                    <td className="px-4 py-3">{v.categoria}</td>
+                    <td className="px-4 py-3 text-zinc-900">{v.ano}</td>
+                    <td className="px-4 py-3 text-zinc-900">{v.cor}</td>
+                    <td className="px-4 py-3 text-zinc-900">{v.categoria}</td>
                   </tr>
                 ))}
               </tbody>
@@ -297,10 +301,10 @@ export default async function MotoristaDetailPage({
         <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden mb-6">
           <div className="px-6 py-4 border-b border-zinc-100">
             <h3 className="font-semibold text-zinc-800">
-              Documentos ({documentos?.length ?? 0})
+              Documentos ({(documentos?.length ?? 0) + (motorista.cnh_foto_url ? 1 : 0)})
             </h3>
           </div>
-          {!documentos || documentos.length === 0 ? (
+          {!motorista.cnh_foto_url && (!documentos || documentos.length === 0) ? (
             <p className="px-6 py-8 text-center text-zinc-400 text-sm">Nenhum documento enviado</p>
           ) : (
             <table className="w-full text-sm">
@@ -310,14 +314,57 @@ export default async function MotoristaDetailPage({
                   <th className="text-left px-4 py-3 font-semibold text-zinc-600">Nome</th>
                   <th className="text-left px-4 py-3 font-semibold text-zinc-600">Status</th>
                   <th className="text-left px-4 py-3 font-semibold text-zinc-600">Upload</th>
+                  <th className="text-left px-4 py-3 font-semibold text-zinc-600">Pré-visualização</th>
                   <th className="text-left px-4 py-3 font-semibold text-zinc-600">Arquivo</th>
                 </tr>
               </thead>
               <tbody>
-                {documentos.map((d) => (
+                {motorista.cnh_foto_url && (
+                  <tr className="border-b border-zinc-50">
+                    <td className="px-4 py-3 text-zinc-900">CNH</td>
+                    <td className="px-4 py-3 text-zinc-900">Foto da CNH</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          statusColors[motorista.status_motorista ?? 'pendente']
+                        }`}
+                      >
+                        {motorista.status_motorista ?? 'pendente'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-zinc-900">—</td>
+                    <td className="px-4 py-3">
+                      <a href={motorista.cnh_foto_url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={motorista.cnh_foto_url}
+                          alt="Foto da CNH"
+                          className="h-14 w-20 object-cover rounded border border-zinc-200"
+                        />
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 space-x-3">
+                      <a
+                        href={motorista.cnh_foto_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Ver
+                      </a>
+                      <a
+                        href={motorista.cnh_foto_url}
+                        download
+                        className="text-blue-600 hover:underline"
+                      >
+                        Baixar
+                      </a>
+                    </td>
+                  </tr>
+                )}
+                {documentos?.map((d) => (
                   <tr key={d.id} className="border-b border-zinc-50">
-                    <td className="px-4 py-3">{d.tipo_documento}</td>
-                    <td className="px-4 py-3">{d.nome_documento}</td>
+                    <td className="px-4 py-3 text-zinc-900">{d.tipo_documento}</td>
+                    <td className="px-4 py-3 text-zinc-900">{d.nome_documento}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
@@ -331,17 +378,33 @@ export default async function MotoristaDetailPage({
                         {d.status_verificacao}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{formatDate(d.data_upload)}</td>
+                    <td className="px-4 py-3 text-zinc-900">{formatDate(d.data_upload)}</td>
                     <td className="px-4 py-3">
                       {d.arquivo_url && (
-                        <a
-                          href={d.arquivo_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Ver arquivo
+                        <a href={d.arquivo_url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={d.arquivo_url}
+                            alt={d.nome_documento}
+                            className="h-14 w-20 object-cover rounded border border-zinc-200"
+                          />
                         </a>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 space-x-3">
+                      {d.arquivo_url && (
+                        <>
+                          <a
+                            href={d.arquivo_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            Ver
+                          </a>
+                          <a href={d.arquivo_url} download className="text-blue-600 hover:underline">
+                            Baixar
+                          </a>
+                        </>
                       )}
                     </td>
                   </tr>
@@ -374,10 +437,10 @@ export default async function MotoristaDetailPage({
               <tbody>
                 {corridas.map((c) => (
                   <tr key={c.id} className="border-b border-zinc-50">
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-zinc-900">
                       {c.tipo_solicitacao === 'motorista' ? 'Só Motorista' : 'Motorista + Carro'}
                     </td>
-                    <td className="px-4 py-3">{formatDate(c.data_servico)}</td>
+                    <td className="px-4 py-3 text-zinc-900">{formatDate(c.data_servico)}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
