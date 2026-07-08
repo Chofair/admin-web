@@ -134,14 +134,14 @@ export default async function SolicitacoesPage({
                     <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
                       {s.nomeUsuario}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
                       {s.tipo_solicitacao === 'motorista' ? 'Só Motorista' : 'Mot. + Carro'}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{formatDate(s.data_servico)}</td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{formatDate(s.data_servico)}</td>
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
                       {s.horario_inicio} – {s.horario_fim}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{s.duracao_horas}h</td>
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{s.duracao_horas}h</td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-semibold ${

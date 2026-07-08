@@ -41,6 +41,12 @@ const pagamentoStatusColors: Record<string, string> = {
   REFUNDED: 'bg-purple-100 text-purple-800',
 };
 
+const repasseStatusColors: Record<string, string> = {
+  pendente: 'bg-yellow-100 text-yellow-800',
+  pago: 'bg-green-100 text-green-800',
+  cancelado: 'bg-red-100 text-red-800',
+};
+
 export default async function SolicitacaoDetailPage({
   params,
 }: {
@@ -49,16 +55,13 @@ export default async function SolicitacaoDetailPage({
   const { id } = await params;
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: solicitacao }, { data: enderecos }, { data: pagamento }] = await Promise.all([
-    supabase
-      .from('solicitacoes')
-      .select(`
-        *,
-        usuario:profiles!solicitacoes_usuario_id_fkey(id, name, cpf, telefone),
-        motorista:profiles!solicitacoes_motorista_id_fkey(id, name, cpf, telefone)
-      `)
-      .eq('id', id)
-      .single(),
+  const [
+    { data: solicitacao, error: solicitacaoError },
+    { data: enderecos },
+    { data: pagamento },
+    { data: repasse },
+  ] = await Promise.all([
+    supabase.from('solicitacoes').select('*').eq('id', id).single(),
     supabase.from('enderecos').select('*').eq('solicitacao_id', id),
     supabase
       .from('pagamentos')
@@ -67,7 +70,16 @@ export default async function SolicitacaoDetailPage({
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from('repasses_motorista')
+      .select('*, driver_profiles!motorista_id(chave_pix)')
+      .eq('solicitacao_id', id)
+      .maybeSingle(),
   ]);
+
+  if (solicitacaoError) {
+    console.error('Erro ao buscar solicitação:', solicitacaoError);
+  }
 
   if (!solicitacao) {
     return (
@@ -82,6 +94,14 @@ export default async function SolicitacaoDetailPage({
       </div>
     );
   }
+
+  const pessoaIds = [solicitacao.usuario_id, solicitacao.motorista_id].filter(Boolean) as string[];
+  const { data: pessoas } = pessoaIds.length
+    ? await supabase.from('profiles').select('id, name, cpf, telefone').in('id', pessoaIds)
+    : { data: [] as { id: string; name: string | null; cpf: string | null; telefone: string | null }[] };
+
+  const usuario = pessoas?.find((p) => p.id === solicitacao.usuario_id) ?? null;
+  const motorista = pessoas?.find((p) => p.id === solicitacao.motorista_id) ?? null;
 
   const enderecoOrigem = enderecos?.find((e: any) => e.tipo === 'origem');
 
@@ -127,31 +147,31 @@ export default async function SolicitacaoDetailPage({
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Tipo</span>
-                <span className="font-medium">
+                <span className="font-medium text-zinc-900">
                   {solicitacao.tipo_solicitacao === 'motorista' ? 'Só Motorista' : 'Motorista + Carro'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Data do serviço</span>
-                <span>{formatDate(solicitacao.data_servico)}</span>
+                <span className="text-zinc-900">{formatDate(solicitacao.data_servico)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Horário</span>
-                <span>{solicitacao.horario_inicio} – {solicitacao.horario_fim}</span>
+                <span className="text-zinc-900">{solicitacao.horario_inicio} – {solicitacao.horario_fim}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Duração</span>
-                <span>{solicitacao.duracao_horas}h</span>
+                <span className="text-zinc-900">{solicitacao.duracao_horas}h</span>
               </div>
               {solicitacao.observacoes && (
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Observações</span>
-                  <span className="text-right max-w-[60%]">{solicitacao.observacoes}</span>
+                  <span className="text-right max-w-[60%] text-zinc-900">{solicitacao.observacoes}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-zinc-500">Criado em</span>
-                <span>{formatDateTime(solicitacao.created_at)}</span>
+                <span className="text-zinc-900">{formatDateTime(solicitacao.created_at)}</span>
               </div>
             </div>
           </div>
@@ -162,11 +182,11 @@ export default async function SolicitacaoDetailPage({
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-zinc-500">Taxa por hora</span>
-                <span>{formatCurrency(solicitacao.taxa_por_hora)}</span>
+                <span className="text-zinc-900">{formatCurrency(solicitacao.taxa_por_hora)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Total</span>
-                <span className="font-bold text-lg">{formatCurrency(solicitacao.preco_total)}</span>
+                <span className="font-bold text-lg text-zinc-900">{formatCurrency(solicitacao.preco_total)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Motorista recebe</span>
@@ -178,11 +198,11 @@ export default async function SolicitacaoDetailPage({
                 <>
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Chofair bruto</span>
-                    <span>{formatCurrency(solicitacao.preco_chofair_bruto)}</span>
+                    <span className="text-zinc-900">{formatCurrency(solicitacao.preco_chofair_bruto)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Imposto estimado</span>
-                    <span>{formatCurrency(solicitacao.preco_chofair_imposto)}</span>
+                    <span className="text-zinc-900">{formatCurrency(solicitacao.preco_chofair_imposto)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Chofair líquido</span>
@@ -203,7 +223,7 @@ export default async function SolicitacaoDetailPage({
                     <span>Valor tempo excedido</span>
                     <span>{formatCurrency(solicitacao.preco_tempo_excedido)}</span>
                   </div>
-                  <div className="flex justify-between font-bold">
+                  <div className="flex justify-between font-bold text-zinc-900">
                     <span>Total final</span>
                     <span>{formatCurrency(solicitacao.preco_final)}</span>
                   </div>
@@ -218,12 +238,12 @@ export default async function SolicitacaoDetailPage({
           {/* Cliente */}
           <div className="bg-white rounded-xl border border-zinc-200 p-6">
             <h3 className="font-semibold text-zinc-800 mb-4">Cliente</h3>
-            {solicitacao.usuario ? (
+            {usuario ? (
               <div className="space-y-2 text-sm">
-                <p className="font-medium text-zinc-900">{solicitacao.usuario.name ?? '—'}</p>
-                <p className="text-zinc-500 font-mono text-xs">{formatCPF(solicitacao.usuario.cpf)}</p>
-                {solicitacao.usuario.telefone && (
-                  <p className="text-zinc-600">{solicitacao.usuario.telefone}</p>
+                <p className="font-medium text-zinc-900">{usuario.name ?? '—'}</p>
+                <p className="text-zinc-500 font-mono text-xs">{formatCPF(usuario.cpf)}</p>
+                {usuario.telefone && (
+                  <p className="text-zinc-900">{usuario.telefone}</p>
                 )}
                 <Link
                   href={`/usuarios/${solicitacao.usuario_id}`}
@@ -240,12 +260,12 @@ export default async function SolicitacaoDetailPage({
           {/* Motorista */}
           <div className="bg-white rounded-xl border border-zinc-200 p-6">
             <h3 className="font-semibold text-zinc-800 mb-4">Motorista</h3>
-            {solicitacao.motorista ? (
+            {motorista ? (
               <div className="space-y-2 text-sm">
-                <p className="font-medium text-zinc-900">{solicitacao.motorista.name ?? '—'}</p>
-                <p className="text-zinc-500 font-mono text-xs">{formatCPF(solicitacao.motorista.cpf)}</p>
-                {solicitacao.motorista.telefone && (
-                  <p className="text-zinc-600">{solicitacao.motorista.telefone}</p>
+                <p className="font-medium text-zinc-900">{motorista.name ?? '—'}</p>
+                <p className="text-zinc-500 font-mono text-xs">{formatCPF(motorista.cpf)}</p>
+                {motorista.telefone && (
+                  <p className="text-zinc-900">{motorista.telefone}</p>
                 )}
                 <Link
                   href={`/motoristas/${solicitacao.motorista_id}`}
@@ -296,7 +316,7 @@ export default async function SolicitacaoDetailPage({
             <div className="flex gap-3">
               <div className="w-2 h-2 rounded-full bg-zinc-400 mt-1.5 flex-shrink-0" />
               <div>
-                <p className="font-medium">Criada</p>
+                <p className="font-medium text-zinc-900">Criada</p>
                 <p className="text-zinc-400">{formatDateTime(solicitacao.created_at)}</p>
               </div>
             </div>
@@ -304,7 +324,7 @@ export default async function SolicitacaoDetailPage({
               <div className="flex gap-3">
                 <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Confirmada</p>
+                  <p className="font-medium text-zinc-900">Confirmada</p>
                   <p className="text-zinc-400">{formatDateTime(solicitacao.confirmada_em)}</p>
                 </div>
               </div>
@@ -313,7 +333,7 @@ export default async function SolicitacaoDetailPage({
               <div className="flex gap-3">
                 <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Iniciada</p>
+                  <p className="font-medium text-zinc-900">Iniciada</p>
                   <p className="text-zinc-400">{formatDateTime(solicitacao.iniciada_em)}</p>
                 </div>
               </div>
@@ -322,7 +342,7 @@ export default async function SolicitacaoDetailPage({
               <div className="flex gap-3">
                 <div className="w-2 h-2 rounded-full bg-orange-500 mt-1.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Finalizada</p>
+                  <p className="font-medium text-zinc-900">Finalizada</p>
                   <p className="text-zinc-400">{formatDateTime(solicitacao.finalizada_em)}</p>
                 </div>
               </div>
@@ -331,7 +351,7 @@ export default async function SolicitacaoDetailPage({
               <div className="flex gap-3">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Concluída</p>
+                  <p className="font-medium text-zinc-900">Concluída</p>
                   <p className="text-zinc-400">{formatDateTime(solicitacao.concluida_em)}</p>
                 </div>
               </div>
@@ -340,7 +360,7 @@ export default async function SolicitacaoDetailPage({
               <div className="flex gap-3">
                 <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Cancelada por: {solicitacao.cancelado_por ?? '—'}</p>
+                  <p className="font-medium text-zinc-900">Cancelada por: {solicitacao.cancelado_por ?? '—'}</p>
                   <p className="text-zinc-400">{formatDateTime(solicitacao.cancelado_em)}</p>
                   {solicitacao.motivo_cancelamento && (
                     <p className="text-zinc-500 italic">{solicitacao.motivo_cancelamento}</p>
@@ -351,55 +371,99 @@ export default async function SolicitacaoDetailPage({
           </div>
         </div>
 
-        {/* Payment */}
-        {pagamento && (
-          <div className="bg-white rounded-xl border border-zinc-200 p-6">
-            <h3 className="font-semibold text-zinc-800 mb-4">Pagamento</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Status</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    pagamentoStatusColors[pagamento.status] ?? 'bg-zinc-100 text-zinc-600'
-                  }`}
-                >
-                  {pagamento.status}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Valor</span>
-                <span className="font-semibold">
-                  {formatCurrency(pagamento.valor_centavos / 100)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">ID AbacatePay</span>
-                <span className="font-mono text-xs text-zinc-400">
-                  {pagamento.abacatepay_billing_id}
-                </span>
-              </div>
-              {pagamento.pago_em && (
+        {/* Payment + Repasse */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {pagamento && (
+            <div className="bg-white rounded-xl border border-zinc-200 p-6">
+              <h3 className="font-semibold text-zinc-800 mb-4">Pagamento do Cliente</h3>
+              <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">Pago em</span>
-                  <span>{formatDateTime(pagamento.pago_em)}</span>
-                </div>
-              )}
-              {pagamento.url_pagamento && (
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Link</span>
-                  <a
-                    href={pagamento.url_pagamento}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                  <span className="text-zinc-500">Status</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      pagamentoStatusColors[pagamento.status] ?? 'bg-zinc-100 text-zinc-600'
+                    }`}
                   >
-                    Abrir link
-                  </a>
+                    {pagamento.status}
+                  </span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Valor</span>
+                  <span className="font-semibold text-zinc-900">
+                    {formatCurrency(pagamento.valor_centavos / 100)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">ID AbacatePay</span>
+                  <span className="font-mono text-xs text-zinc-400">
+                    {pagamento.abacatepay_billing_id}
+                  </span>
+                </div>
+                {pagamento.pago_em && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Pago em</span>
+                    <span className="text-zinc-900">{formatDateTime(pagamento.pago_em)}</span>
+                  </div>
+                )}
+                {pagamento.url_pagamento && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Link</span>
+                    <a
+                      href={pagamento.url_pagamento}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Abrir link
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {repasse && (
+            <div className="bg-white rounded-xl border border-zinc-200 p-6">
+              <h3 className="font-semibold text-zinc-800 mb-4">Repasse ao Motorista</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Status</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      repasseStatusColors[repasse.status] ?? 'bg-zinc-100 text-zinc-600'
+                    }`}
+                  >
+                    {repasse.status}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Valor</span>
+                  <span className="font-semibold text-emerald-700">
+                    {formatCurrency(repasse.valor)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Chave PIX</span>
+                  <span className="font-mono text-xs text-zinc-900">
+                    {repasse.driver_profiles?.chave_pix ?? '—'}
+                  </span>
+                </div>
+                {repasse.pago_em && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Pago em</span>
+                    <span className="text-zinc-900">{formatDateTime(repasse.pago_em)}</span>
+                  </div>
+                )}
+                <Link
+                  href="/pagamentos"
+                  className="text-blue-600 hover:underline text-xs inline-block mt-1"
+                >
+                  Gerenciar repasses →
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

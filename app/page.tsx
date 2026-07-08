@@ -268,6 +268,9 @@ export default function LandingPage() {
 						<Link href="/termos" className="hover:text-slate-900 dark:hover:text-white transition-colors">
 							Termos de Uso
 						</Link>
+						<Link href="/exclusao-de-conta" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+							Exclusão de Conta
+						</Link>
 					</div>
 				</div>
 			</footer>

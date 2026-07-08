@@ -88,6 +88,19 @@ export interface Pagamento {
   created_at: string;
 }
 
+export type StatusRepasse = 'pendente' | 'pago' | 'cancelado';
+
+export interface RepasseMotorista {
+  id: string;
+  solicitacao_id: string;
+  motorista_id: string;
+  valor: number;
+  status: StatusRepasse;
+  pago_em?: string;
+  observacao?: string;
+  created_at: string;
+}
+
 export interface DocumentoMotorista {
   id: string;
   motorista_id: string;
