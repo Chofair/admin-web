@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 import { aprovarMotorista, rejeitarMotorista, suspenderMotorista, reativarMotorista } from './actions';
+import { getVehicleStatusLabel, getVehicleStatusStyle } from '@/lib/vehicle-validation';
 
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return '—';
@@ -56,7 +57,7 @@ export default async function MotoristaDetailPage({
         .single(),
       supabase
         .from('veiculos')
-        .select('*')
+        .select('id, placa, marca, modelo, ano, cor, status_validacao')
         .eq('motorista_id', id)
         .eq('ativo', true)
         .order('created_at', { ascending: false }),
@@ -263,21 +264,22 @@ export default async function MotoristaDetailPage({
         </div>
 
         {/* Vehicles */}
-        <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden mb-6">
+        <div className="bg-white rounded-xl border border-zinc-200 overflow-x-auto mb-6">
           <div className="px-6 py-4 border-b border-zinc-100">
             <h3 className="font-semibold text-zinc-800">Veículos ({veiculos?.length ?? 0})</h3>
           </div>
           {!veiculos || veiculos.length === 0 ? (
             <p className="px-6 py-8 text-center text-zinc-400 text-sm">Nenhum veículo cadastrado</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-zinc-100 bg-zinc-50">
                   <th className="text-left px-4 py-3 font-semibold text-zinc-600">Placa</th>
                   <th className="text-left px-4 py-3 font-semibold text-zinc-600">Modelo</th>
                   <th className="text-left px-4 py-3 font-semibold text-zinc-600">Ano</th>
                   <th className="text-left px-4 py-3 font-semibold text-zinc-600">Cor</th>
-                  <th className="text-left px-4 py-3 font-semibold text-zinc-600">Categoria</th>
+                  <th className="text-left px-4 py-3 font-semibold text-zinc-600">Status</th>
+                  <th className="text-left px-4 py-3 font-semibold text-zinc-600">Ação</th>
                 </tr>
               </thead>
               <tbody>
@@ -289,7 +291,16 @@ export default async function MotoristaDetailPage({
                     </td>
                     <td className="px-4 py-3 text-zinc-900">{v.ano}</td>
                     <td className="px-4 py-3 text-zinc-900">{v.cor}</td>
-                    <td className="px-4 py-3 text-zinc-900">{v.categoria}</td>
+                    <td className="px-4 py-3">
+                      <span className={'inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ' + getVehicleStatusStyle(v.status_validacao)}>
+                        {getVehicleStatusLabel(v.status_validacao)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link href={'/veiculos/' + v.id} className="font-medium text-blue-600 hover:underline">
+                        Revisar
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

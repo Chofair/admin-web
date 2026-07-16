@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Car, ClipboardList, CreditCard, Smartphone, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Users, Car, CarFront, ClipboardList, CreditCard, Smartphone, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 
 const links = [
   { href: '/admin', label: 'Dashboard', Icon: LayoutDashboard },
   { href: '/usuarios', label: 'Usuários', Icon: Users },
   { href: '/motoristas', label: 'Motoristas', Icon: Car },
+  { href: '/veiculos', label: 'Veículos', Icon: CarFront },
   { href: '/solicitacoes', label: 'Solicitações', Icon: ClipboardList },
   { href: '/pagamentos', label: 'Pagamentos', Icon: CreditCard },
   { href: '/aplicativo', label: 'Aplicativo', Icon: Smartphone },
@@ -19,14 +20,14 @@ export default function NavBar() {
   const { theme, toggle } = useTheme();
 
   return (
-    <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700 px-6 py-4">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700 px-4 sm:px-6 py-4">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <Link href="/admin" className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Chofair Admin</Link>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">Painel de controle</p>
         </div>
-        <div className="flex items-center gap-2">
-          <nav className="flex gap-1 text-sm font-medium">
+        <div className="flex min-w-0 items-center gap-2">
+          <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-1 text-sm font-medium lg:pb-0">
             {links.map(({ href, label, Icon }) => {
               const isActive = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
               return (

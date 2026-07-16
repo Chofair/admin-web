@@ -7,6 +7,13 @@ export type StatusSolicitacao =
   | 'concluida'
   | 'cancelada';
 export type StatusPagamento = 'PENDING' | 'EXPIRED' | 'CANCELLED' | 'PAID' | 'REFUNDED';
+export type StatusValidacaoVeiculo =
+  | 'pendente_upload'
+  | 'pendente_extracao'
+  | 'extraido_parcial'
+  | 'pendente_revisao'
+  | 'aprovado'
+  | 'rejeitado';
 
 export interface Profile {
   id: string;
@@ -68,11 +75,24 @@ export interface Veiculo {
   id: string;
   motorista_id: string;
   placa: string;
-  modelo: string;
-  marca?: string;
-  ano: number;
-  cor: string;
-  categoria: string;
+  renavam?: string | null;
+  modelo: string | null;
+  marca?: string | null;
+  ano: number | null;
+  cor: string | null;
+  categoria?: string | null;
+  capacidade_passageiros?: number | null;
+  ar_condicionado?: boolean | null;
+  accessibility_features?: Record<string, unknown> | null;
+  crlv_path?: string | null;
+  crlv_mime_type?: string | null;
+  crlv_uploaded_at?: string | null;
+  status_validacao: StatusValidacaoVeiculo;
+  campos_pendentes?: string[] | null;
+  dados_extraidos_crlv?: Record<string, unknown> | null;
+  validado_por?: string | null;
+  validado_em?: string | null;
+  motivo_rejeicao?: string | null;
   ativo: boolean;
   created_at: string;
 }

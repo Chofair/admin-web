@@ -1,10 +1,12 @@
 'use server';
 
-import { supabaseAdmin } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export async function confirmarRepasse(repasseId: string) {
-  const { error } = await supabaseAdmin
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
     .from('repasses_motorista')
     .update({ status: 'pago', pago_em: new Date().toISOString() })
     .eq('id', repasseId);
@@ -17,7 +19,9 @@ export async function confirmarRepasse(repasseId: string) {
 }
 
 export async function reverterRepasse(repasseId: string) {
-  const { error } = await supabaseAdmin
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
     .from('repasses_motorista')
     .update({ status: 'pendente', pago_em: null })
     .eq('id', repasseId);

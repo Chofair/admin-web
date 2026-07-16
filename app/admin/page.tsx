@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import Link from 'next/link';
 import NavBar from '@/components/NavBar';
-import { Users, Car, ClipboardList, CreditCard, Clock, Activity } from 'lucide-react';
+import { Users, Car, CarFront, ClipboardList, CreditCard, Clock, Activity } from 'lucide-react';
 
 async function getDashboardStats() {
   const supabase = await createSupabaseServerClient();
@@ -12,6 +12,7 @@ async function getDashboardStats() {
     { count: totalSolicitacoes },
     { count: pendingSolicitacoes },
     { count: activeSolicitacoes },
+    { count: pendingVehicles },
     { count: totalPagamentos },
     { count: paidPagamentos },
   ] = await Promise.all([
@@ -21,6 +22,7 @@ async function getDashboardStats() {
     supabase.from('solicitacoes').select('*', { count: 'exact', head: true }),
     supabase.from('solicitacoes').select('*', { count: 'exact', head: true }).eq('status', 'pendente'),
     supabase.from('solicitacoes').select('*', { count: 'exact', head: true }).in('status', ['confirmada', 'em_andamento']),
+    supabase.from('veiculos').select('*', { count: 'exact', head: true }).in('status_validacao', ['pendente_upload', 'pendente_extracao', 'extraido_parcial', 'pendente_revisao']),
     supabase.from('pagamentos').select('*', { count: 'exact', head: true }),
     supabase.from('pagamentos').select('*', { count: 'exact', head: true }).eq('status', 'PAID'),
   ]);
@@ -32,6 +34,7 @@ async function getDashboardStats() {
     totalSolicitacoes: totalSolicitacoes ?? 0,
     pendingSolicitacoes: pendingSolicitacoes ?? 0,
     activeSolicitacoes: activeSolicitacoes ?? 0,
+    pendingVehicles: pendingVehicles ?? 0,
     totalPagamentos: totalPagamentos ?? 0,
     paidPagamentos: paidPagamentos ?? 0,
   };
@@ -41,6 +44,7 @@ export default async function Dashboard() {
   const stats = await getDashboardStats();
 
   const cards = [
+    { title: 'Veículos', value: stats.pendingVehicles, sub: 'aguardando revisão', href: '/veiculos', color: stats.pendingVehicles > 0 ? 'bg-orange-500' : 'bg-green-500', Icon: CarFront },
     { title: 'Usuários', value: stats.totalUsers, sub: 'clientes cadastrados', href: '/usuarios', color: 'bg-blue-500', Icon: Users },
     { title: 'Motoristas', value: stats.totalDrivers, sub: `${stats.pendingDrivers} aguardando aprovação`, href: '/motoristas', color: stats.pendingDrivers > 0 ? 'bg-orange-500' : 'bg-green-500', Icon: Car },
     { title: 'Solicitações', value: stats.totalSolicitacoes, sub: `${stats.pendingSolicitacoes} pendentes • ${stats.activeSolicitacoes} ativas`, href: '/solicitacoes', color: 'bg-purple-500', Icon: ClipboardList },
@@ -54,7 +58,7 @@ export default async function Dashboard() {
       <main className="max-w-7xl mx-auto px-6 py-10">
         <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-200 mb-6">Visão Geral</h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
           {cards.map((card) => (
             <Link
               key={card.href}
@@ -75,7 +79,13 @@ export default async function Dashboard() {
 
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6">
           <h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-200 mb-4">Ações Rápidas</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <Link href="/veiculos?filter=pendentes" className="flex flex-col items-center gap-2 p-4 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-100 dark:border-amber-900 hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors text-center">
+              <CarFront size={22} className="text-amber-600" />
+              <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                Revisar Veículos ({stats.pendingVehicles})
+              </span>
+            </Link>
             <Link href="/motoristas?filter=pendente" className="flex flex-col items-center gap-2 p-4 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors text-center">
               <Clock size={22} className="text-orange-500" />
               <span className="text-xs font-semibold text-orange-800 dark:text-orange-300">Aprovar Motoristas ({stats.pendingDrivers})</span>
