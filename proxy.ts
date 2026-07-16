@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Rotas protegidas — tudo que começa com /admin, /motoristas, /usuarios, /solicitacoes, /pagamentos
-  const isProtected = ['/admin', '/motoristas', '/usuarios', '/solicitacoes', '/pagamentos'].some(
+  const isProtected = ['/admin', '/motoristas', '/veiculos', '/usuarios', '/solicitacoes', '/pagamentos'].some(
     (route) => pathname === route || pathname.startsWith(route + '/')
   );
 
