@@ -1,11 +1,13 @@
 'use server';
 
-import { supabaseAdmin } from '@/lib/supabase';
+import { requireAdmin } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 export async function aprovarMotorista(motoristaId: string) {
-  const { error } = await supabaseAdmin
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
     .from('driver_profiles')
     .update({
       status_motorista: 'aprovado',
@@ -25,6 +27,8 @@ export async function aprovarMotorista(motoristaId: string) {
 }
 
 export async function rejeitarMotorista(formData: FormData) {
+  const { supabase } = await requireAdmin();
+
   const motoristaId = formData.get('motorista_id') as string;
   const motivo = formData.get('motivo') as string;
 
@@ -32,7 +36,7 @@ export async function rejeitarMotorista(formData: FormData) {
     throw new Error('ID do motorista e motivo são obrigatórios');
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await supabase
     .from('driver_profiles')
     .update({
       status_motorista: 'rejeitado',
@@ -51,7 +55,9 @@ export async function rejeitarMotorista(formData: FormData) {
 }
 
 export async function suspenderMotorista(motoristaId: string) {
-  const { error } = await supabaseAdmin
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
     .from('driver_profiles')
     .update({
       status_motorista: 'suspenso',
@@ -69,7 +75,9 @@ export async function suspenderMotorista(motoristaId: string) {
 }
 
 export async function reativarMotorista(motoristaId: string) {
-  const { error } = await supabaseAdmin
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
     .from('driver_profiles')
     .update({
       status_motorista: 'aprovado',
