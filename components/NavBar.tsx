@@ -2,8 +2,22 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Car, CarFront, ClipboardList, CreditCard, Smartphone, Sun, Moon } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users,
+  Car,
+  CarFront,
+  ClipboardList,
+  CreditCard,
+  Smartphone,
+  Sun,
+  Moon,
+  ListChecks,
+  BadgeDollarSign,
+  LogOut,
+} from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
+import { logout } from '@/app/auth/actions';
 
 const links = [
   { href: '/admin', label: 'Dashboard', Icon: LayoutDashboard },
@@ -11,6 +25,8 @@ const links = [
   { href: '/motoristas', label: 'Motoristas', Icon: Car },
   { href: '/veiculos', label: 'Veículos', Icon: CarFront },
   { href: '/solicitacoes', label: 'Solicitações', Icon: ClipboardList },
+  { href: '/revisoes-corridas', label: 'Revisões', Icon: ListChecks },
+  { href: '/cancelamentos-pagamento', label: 'Reembolsos', Icon: BadgeDollarSign },
   { href: '/pagamentos', label: 'Pagamentos', Icon: CreditCard },
   { href: '/aplicativo', label: 'Aplicativo', Icon: Smartphone },
 ];
@@ -53,6 +69,16 @@ export default function NavBar() {
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+          <form action={logout}>
+            <button
+              type="submit"
+              aria-label="Sair do painel"
+              title="Sair do painel"
+              className="p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-700 dark:hover:text-red-400 transition-colors"
+            >
+              <LogOut size={18} />
+            </button>
+          </form>
         </div>
       </div>
     </header>

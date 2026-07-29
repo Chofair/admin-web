@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/auth';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 import { aprovarMotorista, rejeitarMotorista, suspenderMotorista, reativarMotorista } from './actions';
@@ -46,7 +46,7 @@ export default async function MotoristaDetailPage({
 }) {
   const { id } = await params;
   const { msg } = await searchParams;
-  const supabase = await createSupabaseServerClient();
+  const { supabase } = await requireAdmin();
 
   const [{ data: motorista }, { data: veiculos }, { data: documentos }, { data: corridas }] =
     await Promise.all([

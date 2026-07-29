@@ -104,7 +104,14 @@ export interface Pagamento {
   url_pagamento: string;
   valor_centavos: number;
   status: StatusPagamento;
-  pago_em?: string;
+  tipo_pagamento: 'inicial' | 'excedente';
+  chave_idempotencia?: string | null;
+  pago_em?: string | null;
+  conciliacao_verificada_em?: string | null;
+  conciliacao_tentativas: number;
+  conciliacao_nao_encontrado_tentativas: number;
+  conciliacao_encerrada_em?: string | null;
+  conciliacao_motivo?: string | null;
   created_at: string;
 }
 

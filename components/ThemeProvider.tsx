@@ -16,8 +16,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem('theme') as Theme | null;
     const initial =
       stored ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(initial);
     document.documentElement.classList.toggle('dark', initial === 'dark');
+
+    // Mantém o primeiro HTML estável durante a hidratação e sincroniza o
+    // estado React logo depois da leitura da preferência externa.
+    const timer = window.setTimeout(() => setTheme(initial), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const toggle = () => {

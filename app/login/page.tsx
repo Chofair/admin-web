@@ -2,17 +2,26 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Suspense } from 'react';
+
+const loginErrorMessages: Record<string, string> = {
+  acesso_negado: 'Você não tem permissão de acesso ao painel admin.',
+  configuracao: 'O painel está sem a configuração necessária do Supabase.',
+  sessao_expirada: 'Sua sessão anterior expirou. Entre novamente.',
+  sessao_indisponivel: 'Não foi possível validar sua sessão. Tente entrar novamente.',
+  verificacao: 'Não foi possível verificar sua permissão administrativa agora.',
+};
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const acessoNegado = searchParams.get('erro') === 'acesso_negado';
+  const errorCode = searchParams.get('erro') ?? '';
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [erro, setErro] = useState(acessoNegado ? 'Você não tem permissão de acesso ao painel admin.' : '');
+  const [erro, setErro] = useState(loginErrorMessages[errorCode] ?? '');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -28,14 +37,20 @@ function LoginForm() {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        await supabase.auth.signOut({ scope: 'local' });
+        setErro('Não foi possível verificar sua permissão administrativa. Tente novamente.');
+        return;
+      }
 
       if (!profile?.is_admin) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         setErro('Você não tem permissão de acesso ao painel admin.');
         return;
       }
@@ -98,6 +113,12 @@ function LoginForm() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+        <Link
+          href="/"
+          className="mt-6 block text-center text-sm text-slate-400 transition-colors hover:text-white"
+        >
+          ← Voltar ao site
+        </Link>
       </div>
     </div>
   );
