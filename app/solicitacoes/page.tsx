@@ -1,33 +1,73 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
-import NavBar from '@/components/NavBar';
 import Link from 'next/link';
+import NavBar from '@/components/NavBar';
+import { requireAdmin } from '@/lib/auth';
 
-function formatDate(dateStr?: string) {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('pt-BR');
+type RequestListRow = {
+  id: string;
+  tipo_solicitacao: string;
+  data_servico: string;
+  horario_inicio: string;
+  horario_fim: string;
+  duracao_horas: number;
+  status: string;
+  preco_total: number | null;
+  preco_final: number | null;
+  preco_tempo_excedido: number | null;
+  revisao_solicitada_em: string | null;
+  created_at: string;
+  usuario_id: string;
+  motorista_id: string | null;
+  nomeUsuario: string;
+};
+
+function formatDate(value?: string | null) {
+  if (!value) return '—';
+  return new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR');
 }
 
-function formatCurrency(val?: number) {
-  if (val == null) return '—';
-  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+function formatCurrency(value?: number | null) {
+  if (value == null) return '—';
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 const statusColors: Record<string, string> = {
-  pendente: 'bg-yellow-100 text-yellow-800',
-  confirmada: 'bg-green-100 text-green-800',
-  em_andamento: 'bg-blue-100 text-blue-800',
-  finalizada: 'bg-orange-100 text-orange-800',
-  concluida: 'bg-emerald-100 text-emerald-800',
-  cancelada: 'bg-red-100 text-red-800',
+  pendente: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300',
+  confirmada: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
+  em_andamento: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  finalizada: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+  concluida: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  cancelada: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
 };
 
-const validStatuses = ['pendente', 'confirmada', 'em_andamento', 'finalizada', 'concluida', 'cancelada'];
+const validStatuses = [
+  'pendente',
+  'confirmada',
+  'em_andamento',
+  'finalizada',
+  'concluida',
+  'cancelada',
+];
 
-async function getSolicitacoes(filter?: string) {
-  const supabase = await createSupabaseServerClient();
+async function getRequests(filter?: string): Promise<RequestListRow[]> {
+  const { supabase } = await requireAdmin();
   let query = supabase
     .from('solicitacoes')
-    .select('id, tipo_solicitacao, data_servico, horario_inicio, horario_fim, duracao_horas, status, preco_total, created_at, usuario_id, motorista_id')
+    .select(`
+      id,
+      tipo_solicitacao,
+      data_servico,
+      horario_inicio,
+      horario_fim,
+      duracao_horas,
+      status,
+      preco_total,
+      preco_final,
+      preco_tempo_excedido,
+      revisao_solicitada_em,
+      created_at,
+      usuario_id,
+      motorista_id
+    `)
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -37,22 +77,28 @@ async function getSolicitacoes(filter?: string) {
 
   const { data, error } = await query;
   if (error) {
-    console.error('Erro ao buscar solicitações:', error);
+    console.error('Erro ao buscar solicitações:', {
+      code: error.code,
+      message: error.message,
+    });
     return [];
   }
 
-  const usuarioIds = [...new Set((data ?? []).map((s: any) => s.usuario_id).filter(Boolean))];
-  let nomesPorId: Record<string, string> = {};
+  const requests = (data ?? []) as unknown as Omit<RequestListRow, 'nomeUsuario'>[];
+  const userIds = [
+    ...new Set(requests.map((request) => request.usuario_id).filter(Boolean)),
+  ];
+  const { data: profiles } = userIds.length
+    ? await supabase.from('profiles').select('id, name').in('id', userIds)
+    : { data: [] as { id: string; name: string | null }[] };
+  const namesById = new Map(
+    (profiles ?? []).map((profile) => [profile.id, profile.name ?? '—']),
+  );
 
-  if (usuarioIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, name')
-      .in('id', usuarioIds);
-    nomesPorId = Object.fromEntries((profiles ?? []).map((p: any) => [p.id, p.name]));
-  }
-
-  return (data ?? []).map((s: any) => ({ ...s, nomeUsuario: nomesPorId[s.usuario_id] ?? '—' }));
+  return requests.map((request) => ({
+    ...request,
+    nomeUsuario: namesById.get(request.usuario_id) ?? '—',
+  }));
 }
 
 export default async function SolicitacoesPage({
@@ -61,13 +107,12 @@ export default async function SolicitacoesPage({
   searchParams: Promise<{ filter?: string }>;
 }) {
   const { filter } = await searchParams;
-  const solicitacoes = await getSolicitacoes(filter);
-
+  const requests = await getRequests(filter);
   const filters = [
     { key: undefined, label: 'Todas' },
     { key: 'pendente', label: 'Pendentes' },
     { key: 'confirmada', label: 'Confirmadas' },
-    { key: 'em_andamento', label: 'Em Andamento' },
+    { key: 'em_andamento', label: 'Em andamento' },
     { key: 'finalizada', label: 'Finalizadas' },
     { key: 'concluida', label: 'Concluídas' },
     { key: 'cancelada', label: 'Canceladas' },
@@ -76,88 +121,126 @@ export default async function SolicitacoesPage({
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <NavBar />
-      <main className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-6">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-200">Solicitações</h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{solicitacoes.length} solicitações</p>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+              Solicitações
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              {requests.length} registros nesta página
+            </p>
           </div>
+          <Link
+            href="/revisoes-corridas?status=aberta"
+            className="text-sm font-semibold text-orange-700 hover:underline dark:text-orange-400"
+          >
+            Abrir fila de revisões
+          </Link>
         </div>
 
-        <div className="flex gap-2 mb-4 flex-wrap">
-          {filters.map((f) => {
-            const isActive = filter === f.key || (!filter && !f.key);
-            const href = f.key ? `/solicitacoes?filter=${f.key}` : '/solicitacoes';
+        <div className="mb-4 flex flex-wrap gap-2">
+          {filters.map((item) => {
+            const active = filter === item.key || (!filter && !item.key);
+            const href = item.key ? `/solicitacoes?filter=${item.key}` : '/solicitacoes';
             return (
               <Link
-                key={f.label}
+                key={item.label}
                 href={href}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                    : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                    : 'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'
                 }`}
               >
-                {f.label}
+                {item.label}
               </Link>
             );
           })}
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+          <table className="min-w-[940px] w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
-                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Cliente</th>
-                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Tipo</th>
-                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Data Serviço</th>
-                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Horário</th>
-                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Dur.</th>
-                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Valor</th>
-                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Ações</th>
+              <tr className="border-b border-zinc-100 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+                <th className="px-4 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+                  Cliente
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+                  Serviço
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+                  Data / horário
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+                  Total
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+                  Operação
+                </th>
               </tr>
             </thead>
             <tbody>
-              {solicitacoes.length === 0 ? (
+              {requests.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-zinc-400 dark:text-zinc-500">
+                  <td colSpan={6} className="px-4 py-10 text-center text-zinc-400">
                     Nenhuma solicitação encontrada
                   </td>
                 </tr>
               ) : (
-                solicitacoes.map((s: any) => (
+                requests.map((request) => (
                   <tr
-                    key={s.id}
-                    className="border-b border-zinc-50 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                    key={request.id}
+                    className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800"
                   >
                     <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
-                      {s.nomeUsuario}
+                      {request.nomeUsuario}
                     </td>
-                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
-                      {s.tipo_solicitacao === 'motorista' ? 'Só Motorista' : 'Mot. + Carro'}
+                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      {request.tipo_solicitacao === 'motorista'
+                        ? 'Só motorista'
+                        : 'Motorista + carro'}
+                      <p className="mt-1 text-xs text-zinc-400">
+                        {request.duracao_horas}h contratadas
+                      </p>
                     </td>
-                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{formatDate(s.data_servico)}</td>
-                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
-                      {s.horario_inicio} – {s.horario_fim}
+                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      {formatDate(request.data_servico)}
+                      <p className="mt-1 text-xs text-zinc-400">
+                        {request.horario_inicio} – {request.horario_fim}
+                      </p>
                     </td>
-                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">{s.duracao_horas}h</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          statusColors[s.status] ?? 'bg-zinc-100 text-zinc-600'
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          statusColors[request.status] ?? statusColors.pendente
                         }`}
                       >
-                        {s.status}
+                        {request.status.replaceAll('_', ' ')}
                       </span>
+                      {request.revisao_solicitada_em && (
+                        <p className="mt-2 text-xs font-semibold text-purple-700 dark:text-purple-400">
+                          Em revisão
+                        </p>
+                      )}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-zinc-900 dark:text-zinc-100">{formatCurrency(s.preco_total)}</td>
+                    <td className="px-4 py-3 font-semibold text-zinc-900 dark:text-zinc-100">
+                      {formatCurrency(request.preco_final ?? request.preco_total)}
+                      {(request.preco_tempo_excedido ?? 0) > 0 && (
+                        <p className="mt-1 text-xs font-normal text-orange-700 dark:text-orange-400">
+                          + {formatCurrency(request.preco_tempo_excedido)} excedente
+                        </p>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={`/solicitacoes/${s.id}`}
-                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                        href={`/solicitacoes/${request.id}`}
+                        className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
                       >
-                        Ver
+                        Ver detalhes
                       </Link>
                     </td>
                   </tr>
