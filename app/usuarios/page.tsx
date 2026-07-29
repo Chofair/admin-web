@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/auth';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 
@@ -12,7 +12,7 @@ type UsuarioRow = {
 };
 
 async function getUsuarios() {
-  const supabase = await createSupabaseServerClient();
+  const { supabase } = await requireAdmin();
   const { data, error } = await supabase
     .from('profiles')
     .select('id, name, cpf, terms_role, telefone, created_at')

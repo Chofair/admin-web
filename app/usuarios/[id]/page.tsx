@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/auth';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 
@@ -35,7 +35,7 @@ export default async function UsuarioDetailPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createSupabaseServerClient();
+  const { supabase } = await requireAdmin();
   const [{ data: profile }, { data: solicitacoes }] = await Promise.all([
     supabase
       .from('profiles')

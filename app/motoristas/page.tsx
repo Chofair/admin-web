@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/auth';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 
@@ -16,7 +16,7 @@ type MotoristaSummary = {
 };
 
 async function getMotoristas(filter?: string) {
-  const supabase = await createSupabaseServerClient();
+  const { supabase } = await requireAdmin();
   let query = supabase
     .from('driver_profiles')
     .select('id, status_motorista, cnh_numero, cnh_validade, created_at, profiles(name, cpf, telefone)')
