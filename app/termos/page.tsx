@@ -279,7 +279,10 @@ export default function TermosPage() {
                 {'items' in section && section.items && (
                   <div className="space-y-3">
                     {section.items.map((item, ii) => {
-                      const sub = (section as any).subLetters?.[ii];
+                      const subLetters = 'subLetters' in section
+                        ? (section.subLetters as Partial<Record<number, string[]>>)
+                        : undefined;
+                      const sub = subLetters?.[ii];
                       const num = `${si + 1}.${ii + 1}`;
                       return (
                         <div key={ii}>
