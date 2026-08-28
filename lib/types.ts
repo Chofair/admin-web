@@ -100,8 +100,11 @@ export interface Veiculo {
 export interface Pagamento {
   id: string;
   solicitacao_id: string;
-  abacatepay_billing_id: string;
-  url_pagamento: string;
+  abacatepay_billing_id: string | null;
+  mercadopago_payment_id: string | null;
+  mercadopago_status_detail: string | null;
+  mercadopago_environment: 'sandbox' | 'production' | null;
+  url_pagamento: string | null;
   valor_centavos: number;
   status: StatusPagamento;
   tipo_pagamento: 'inicial' | 'excedente';

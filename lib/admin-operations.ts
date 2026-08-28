@@ -4,11 +4,20 @@ import type { createSupabaseServerClient } from '@/lib/supabase-server';
 
 export type AdminQueueStatus = 'aberta' | 'resolvida' | 'todas';
 export type RideReviewDecision = 'manter_cobranca' | 'isentar_excedente_cliente';
+export type PaymentProvider = 'mercadopago' | 'abacatepay' | 'sem_provedor';
+export type PaymentEnvironment = 'sandbox' | 'production';
 export type ManualRefundMethod =
   | 'pix'
   | 'transferencia_bancaria'
   | 'dinheiro'
   | 'credito_em_conta'
+  | 'outro';
+export type ManualRefundReason =
+  | 'cancelamento_solicitacao'
+  | 'pagamento_duplicado'
+  | 'cobranca_indevida'
+  | 'falha_operacional'
+  | 'acordo_com_cliente'
   | 'outro';
 
 export type PaymentSummary = {
@@ -17,6 +26,7 @@ export type PaymentSummary = {
   status: string;
   valor_centavos: number;
   abacatepay_billing_id: string | null;
+  mercadopago_payment_id: string | null;
   created_at: string;
   pago_em: string | null;
 };
@@ -62,6 +72,7 @@ export type RideReviewItem = {
 export type ManualRefundRecord = {
   id: string;
   metodo: ManualRefundMethod;
+  motivo: ManualRefundReason;
   administrador_id?: string;
   administrador_nome: string | null;
   realizado_em: string;
@@ -86,9 +97,44 @@ export type PaymentCancellationItem = {
   snapshot_financeiro: Record<string, unknown>;
   pagamento_status_atual: string | null;
   valor_centavos: number | null;
+  provedor: PaymentProvider | null;
+  metodos: string[];
   abacatepay_billing_id: string | null;
+  mercadopago_payment_id: string | null;
+  mercadopago_status_detail: string | null;
+  mercadopago_environment: PaymentEnvironment | null;
   pago_em: string | null;
+  conciliacao_verificada_em: string | null;
+  conciliacao_tentativas: number;
+  conciliacao_nao_encontrado_tentativas: number;
+  conciliacao_encerrada_em: string | null;
+  conciliacao_motivo: string | null;
   reembolso_manual: ManualRefundRecord | null;
+};
+
+export type AdminPaymentItem = {
+  id: string;
+  solicitacao_id: string;
+  usuario_id: string | null;
+  usuario_nome: string | null;
+  tipo_solicitacao: string | null;
+  tipo_pagamento: 'inicial' | 'excedente';
+  status: string;
+  valor_centavos: number;
+  metodos: string[];
+  provedor: PaymentProvider;
+  abacatepay_billing_id: string | null;
+  mercadopago_payment_id: string | null;
+  mercadopago_status_detail: string | null;
+  mercadopago_environment: PaymentEnvironment | null;
+  url_pagamento: string | null;
+  created_at: string;
+  pago_em: string | null;
+  conciliacao_verificada_em: string | null;
+  conciliacao_tentativas: number;
+  conciliacao_nao_encontrado_tentativas: number;
+  conciliacao_encerrada_em: string | null;
+  conciliacao_motivo: string | null;
 };
 
 export type RideReviewContext = {
@@ -212,6 +258,57 @@ export async function listPaymentCancellations(
   }
 
   return { ...parseQueue<PaymentCancellationItem>(data), error: null };
+}
+
+export async function listAdminPayments(
+  supabase: SupabaseServerClient,
+  status: string | undefined,
+  provider: PaymentProvider | undefined,
+  environment: PaymentEnvironment | undefined,
+  cursor?: string,
+): Promise<QueueResult<AdminPaymentItem>> {
+  const { data, error } = await supabase.rpc('admin_listar_pagamentos', {
+    status_input: status ?? 'todos',
+    provedor_input: provider ?? 'todos',
+    ambiente_input: environment ?? 'todos',
+    limite_input: 50,
+    antes_de_input: cursor ?? null,
+  });
+
+  if (error) {
+    console.error('Erro ao listar pagamentos administrativos:', {
+      code: error.code,
+      message: error.message,
+    });
+    return {
+      items: [],
+      nextCursor: null,
+      limit: 50,
+      error: 'Não foi possível carregar os pagamentos.',
+    };
+  }
+
+  return { ...parseQueue<AdminPaymentItem>(data), error: null };
+}
+
+export async function getAdminRequestPayments(
+  supabase: SupabaseServerClient,
+  requestId: string,
+): Promise<{ items: AdminPaymentItem[]; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_obter_pagamentos_solicitacao', {
+    solicitacao_id_input: requestId,
+  });
+
+  if (error) {
+    console.error('Erro ao carregar pagamentos da solicitação:', {
+      code: error.code,
+      message: error.message,
+      requestId,
+    });
+    return { items: [], error: 'Não foi possível carregar os pagamentos.' };
+  }
+
+  return { items: Array.isArray(data) ? (data as AdminPaymentItem[]) : [], error: null };
 }
 
 export async function getRequestAdminContext(

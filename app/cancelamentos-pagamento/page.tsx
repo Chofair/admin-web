@@ -14,6 +14,7 @@ import {
   type AdminQueueStatus,
 } from '@/lib/admin-operations';
 import { ManualRefundForm } from './ManualRefundForm';
+import { RetryReconciliationForm } from './RetryReconciliationForm';
 
 function formatCents(value?: number | null) {
   if (value == null) return '—';
@@ -46,6 +47,19 @@ function getPaymentStatusStyle(status?: string | null) {
     default:
       return 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300';
   }
+}
+
+function getProviderLabel(provider?: string | null) {
+  if (provider === 'mercadopago') return 'Mercado Pago';
+  if (provider === 'abacatepay') return 'AbacatePay (legado)';
+  return 'Sem cobrança criada';
+}
+
+function getProviderReference(cancellation: {
+  mercadopago_payment_id: string | null;
+  abacatepay_billing_id: string | null;
+}) {
+  return cancellation.mercadopago_payment_id ?? cancellation.abacatepay_billing_id;
 }
 
 export default async function PaymentCancellationsPage({
@@ -82,9 +96,9 @@ export default async function PaymentCancellationsPage({
               Cancelamentos e reembolsos
             </h1>
             <p className="mt-1 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
-              Acompanhe cobranças canceladas antes do aceite e registre reembolsos
-              manuais com comprovante. O status exibido da AbacatePay continua sendo o
-              status real do provedor.
+              Acompanhe cancelamentos sem cobrança, concilie pagamentos e registre
+              reembolsos já executados manualmente. Nenhuma ação desta página solicita
+              uma devolução ao Mercado Pago.
             </p>
           </div>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -125,6 +139,13 @@ export default async function PaymentCancellationsPage({
               cancellation.tratamento_financeiro === 'reembolso' &&
               cancellation.pagamento_status_atual === 'PAID' &&
               cancellation.valor_centavos != null;
+            const providerReference = getProviderReference(cancellation);
+            const canRetryReconciliation =
+              cancellation.status === 'aberta' &&
+              cancellation.pagamento_status_atual === 'PENDING' &&
+              Boolean(cancellation.conciliacao_encerrada_em) &&
+              Boolean(cancellation.pagamento_id) &&
+              Boolean(providerReference);
 
             return (
               <article
@@ -181,7 +202,7 @@ export default async function PaymentCancellationsPage({
 
                 <div className="mt-5 grid gap-4 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-950 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <p className="text-xs text-zinc-500">Status AbacatePay atual</p>
+                    <p className="text-xs text-zinc-500">Status financeiro atual</p>
                     <span
                       className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getPaymentStatusStyle(
                         cancellation.pagamento_status_atual,
@@ -203,15 +224,31 @@ export default async function PaymentCancellationsPage({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Billing ID</p>
+                    <p className="text-xs text-zinc-500">
+                      {getProviderLabel(cancellation.provedor)} / referência
+                    </p>
                     <p
                       className="mt-1 truncate font-mono text-xs text-zinc-600 dark:text-zinc-300"
-                      title={cancellation.abacatepay_billing_id ?? undefined}
+                      title={providerReference ?? undefined}
                     >
-                      {cancellation.abacatepay_billing_id ?? '—'}
+                      {providerReference ?? '—'}
                     </p>
+                    {cancellation.mercadopago_environment && (
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Ambiente: {cancellation.mercadopago_environment}
+                      </p>
+                    )}
+                    {cancellation.mercadopago_status_detail && (
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Detalhe: {cancellation.mercadopago_status_detail}
+                      </p>
+                    )}
                   </div>
                 </div>
+
+                {canRetryReconciliation && cancellation.pagamento_id && (
+                  <RetryReconciliationForm paymentId={cancellation.pagamento_id} />
+                )}
 
                 {cancellation.status === 'aberta' &&
                   cancellation.tratamento_financeiro === 'acompanhar_cobranca' && (
@@ -252,6 +289,12 @@ export default async function PaymentCancellationsPage({
                       Reembolso manual auditado
                     </div>
                     <dl className="mt-3 grid gap-3 text-emerald-900 dark:text-emerald-200 sm:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <dt className="text-xs opacity-70">Motivo</dt>
+                        <dd className="mt-1 font-medium">
+                          {cancellation.reembolso_manual.motivo.replaceAll('_', ' ')}
+                        </dd>
+                      </div>
                       <div>
                         <dt className="text-xs opacity-70">Método / valor</dt>
                         <dd className="mt-1 font-medium">
