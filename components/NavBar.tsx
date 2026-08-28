@@ -9,6 +9,7 @@ import {
   CarFront,
   ClipboardList,
   CreditCard,
+  MapPinned,
   Smartphone,
   Sun,
   Moon,
@@ -28,6 +29,7 @@ const links = [
   { href: '/revisoes-corridas', label: 'Revisões', Icon: ListChecks },
   { href: '/cancelamentos-pagamento', label: 'Reembolsos', Icon: BadgeDollarSign },
   { href: '/pagamentos', label: 'Pagamentos', Icon: CreditCard },
+  { href: '/google-maps', label: 'Google Maps', Icon: MapPinned },
   { href: '/aplicativo', label: 'Aplicativo', Icon: Smartphone },
 ];
 
