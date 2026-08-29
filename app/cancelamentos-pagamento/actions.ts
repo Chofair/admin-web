@@ -2,7 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth';
-import type { ManualRefundMethod } from '@/lib/admin-operations';
+import type {
+  ManualRefundMethod,
+  ManualRefundReason,
+} from '@/lib/admin-operations';
 
 export type ManualRefundActionState = {
   status: 'idle' | 'success' | 'error';
@@ -19,6 +22,14 @@ const VALID_METHODS: ManualRefundMethod[] = [
   'credito_em_conta',
   'outro',
 ];
+const VALID_REASONS: ManualRefundReason[] = [
+  'cancelamento_solicitacao',
+  'pagamento_duplicado',
+  'cobranca_indevida',
+  'falha_operacional',
+  'acordo_com_cliente',
+  'outro',
+];
 
 function parseCurrencyToCents(value: string) {
   const normalized = value.trim().replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
@@ -31,7 +42,7 @@ function parseCurrencyToCents(value: string) {
 function getSafeRpcMessage(message: string) {
   const knownMessages = [
     'Este cancelamento nao esta aguardando reembolso',
-    'O pagamento nao esta PAID na AbacatePay; aguarde a conciliacao antes do registro manual',
+    'O pagamento nao esta PAID; aguarde a conciliacao antes do registro manual',
     'O valor deve corresponder integralmente ao pagamento associado',
     'Cancelamento financeiro nao encontrado',
   ];
@@ -49,9 +60,11 @@ export async function registerManualRefund(
   const cancellationId = String(formData.get('cancelamento_id') ?? '').trim();
   const requestId = String(formData.get('solicitacao_id') ?? '').trim();
   const method = String(formData.get('metodo') ?? '').trim() as ManualRefundMethod;
+  const reason = String(formData.get('motivo') ?? '').trim() as ManualRefundReason;
   const amountInCents = parseCurrencyToCents(String(formData.get('valor') ?? ''));
   const reference = String(formData.get('referencia') ?? '').trim();
   const observation = String(formData.get('observacao') ?? '').trim();
+  const confirmedOutsideProvider = formData.get('confirmado_fora_provedor') === 'sim';
 
   if (!UUID_PATTERN.test(cancellationId) || !UUID_PATTERN.test(requestId)) {
     return { status: 'error', message: 'Cancelamento inválido.' };
@@ -59,6 +72,17 @@ export async function registerManualRefund(
 
   if (!VALID_METHODS.includes(method)) {
     return { status: 'error', message: 'Selecione um método válido.' };
+  }
+
+  if (!VALID_REASONS.includes(reason)) {
+    return { status: 'error', message: 'Selecione um motivo válido.' };
+  }
+
+  if (!confirmedOutsideProvider) {
+    return {
+      status: 'error',
+      message: 'Confirme que o valor já foi devolvido fora do painel.',
+    };
   }
 
   if (amountInCents == null) {
@@ -80,9 +104,10 @@ export async function registerManualRefund(
   }
 
   const { supabase } = await requireAdmin();
-  const { error } = await supabase.rpc('admin_registrar_reembolso_manual', {
+  const { error } = await supabase.rpc('admin_registrar_reembolso_manual_v2', {
     cancelamento_id_input: cancellationId,
     metodo_input: method,
+    motivo_input: reason,
     valor_centavos_input: amountInCents,
     referencia_input: reference,
     observacao_input: observation,
@@ -104,7 +129,52 @@ export async function registerManualRefund(
 
   return {
     status: 'success',
-    message:
-      'Reembolso manual registrado. O status da AbacatePay foi preservado.',
+    message: 'Reembolso manual registrado. O status do provedor foi preservado.',
+  };
+}
+
+export async function reopenPaymentReconciliation(
+  _previousState: ManualRefundActionState,
+  formData: FormData,
+): Promise<ManualRefundActionState> {
+  const paymentId = String(formData.get('pagamento_id') ?? '').trim();
+  const reason = String(formData.get('motivo_reabertura') ?? '').trim();
+
+  if (!UUID_PATTERN.test(paymentId)) {
+    return { status: 'error', message: 'Pagamento inválido.' };
+  }
+
+  if (reason.length < 10 || reason.length > 500) {
+    return {
+      status: 'error',
+      message: 'Informe uma justificativa entre 10 e 500 caracteres.',
+    };
+  }
+
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase.rpc('admin_reabrir_conciliacao_pagamento', {
+    pagamento_id_input: paymentId,
+    motivo_input: reason,
+  });
+
+  if (error) {
+    console.error('Erro ao reabrir conciliação:', {
+      code: error.code,
+      message: error.message,
+      paymentId,
+    });
+    return {
+      status: 'error',
+      message: 'Não foi possível reabrir a conciliação. Atualize a fila e tente novamente.',
+    };
+  }
+
+  revalidatePath('/cancelamentos-pagamento');
+  revalidatePath('/pagamentos');
+  revalidatePath('/admin');
+
+  return {
+    status: 'success',
+    message: 'Conciliação reaberta para a próxima execução automática.',
   };
 }

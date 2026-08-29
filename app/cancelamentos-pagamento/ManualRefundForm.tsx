@@ -33,15 +33,32 @@ export function ManualRefundForm({
 
       <div className="mb-4">
         <h3 className="font-semibold text-purple-900 dark:text-purple-200">
-          Registrar reembolso executado fora da AbacatePay
+          Registrar reembolso executado manualmente
         </h3>
         <p className="mt-1 text-xs text-purple-700 dark:text-purple-300">
-          Este registro fecha a pendência administrativa, mas mantém intacto o status
-          informado pelo provedor.
+          Esta ação apenas audita uma devolução já realizada fora do painel. Ela não
+          solicita reembolso ao Mercado Pago e mantém o status do provedor intacto.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <label className="grid gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Motivo
+          <select
+            name="motivo"
+            required
+            defaultValue="cancelamento_solicitacao"
+            className="rounded-lg border border-purple-200 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-purple-500 dark:border-purple-800 dark:bg-zinc-950 dark:text-zinc-100"
+          >
+            <option value="cancelamento_solicitacao">Cancelamento da solicitação</option>
+            <option value="pagamento_duplicado">Pagamento duplicado</option>
+            <option value="cobranca_indevida">Cobrança indevida</option>
+            <option value="falha_operacional">Falha operacional</option>
+            <option value="acordo_com_cliente">Acordo com o cliente</option>
+            <option value="outro">Outro</option>
+          </select>
+        </label>
+
         <label className="grid gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Método
           <select
@@ -95,6 +112,20 @@ export function ManualRefundForm({
           placeholder="Descreva como e por que o reembolso foi realizado."
           className="resize-y rounded-lg border border-purple-200 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-purple-500 dark:border-purple-800 dark:bg-zinc-950 dark:text-zinc-100"
         />
+      </label>
+
+      <label className="mt-4 flex items-start gap-3 rounded-lg border border-purple-200 bg-white p-3 text-sm text-purple-950 dark:border-purple-800 dark:bg-zinc-950 dark:text-purple-200">
+        <input
+          type="checkbox"
+          name="confirmado_fora_provedor"
+          value="sim"
+          required
+          className="mt-0.5 h-4 w-4 accent-purple-700"
+        />
+        <span>
+          Confirmo que o valor integral já foi devolvido ao cliente por um meio externo e
+          que possuo o comprovante informado acima.
+        </span>
       </label>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -13,7 +13,9 @@ import SafeExternalLink from '@/components/SafeExternalLink';
 import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
 import { requireAdmin } from '@/lib/auth';
 import {
+  getAdminRequestPayments,
   getRequestAdminContext,
+  type AdminPaymentItem,
   type ManualRefundRecord,
   type PaymentCancellationContext,
   type RequestAdminContext,
@@ -71,21 +73,7 @@ type AddressRow = {
   longitude: number | null;
 };
 
-type PaymentDetail = {
-  id: string;
-  tipo_pagamento: 'inicial' | 'excedente';
-  status: string;
-  valor_centavos: number;
-  abacatepay_billing_id: string | null;
-  url_pagamento: string | null;
-  created_at: string;
-  pago_em: string | null;
-  conciliacao_verificada_em: string | null;
-  conciliacao_tentativas: number;
-  conciliacao_nao_encontrado_tentativas: number;
-  conciliacao_encerrada_em: string | null;
-  conciliacao_motivo: string | null;
-};
+type PaymentDetail = AdminPaymentItem;
 
 type PayoutDetail = {
   id: string;
@@ -203,7 +191,13 @@ function buildTimeline(
       payment.pago_em,
       `Pagamento ${type} confirmado`,
       'green',
-      `${formatCents(payment.valor_centavos)} · AbacatePay`,
+      `${formatCents(payment.valor_centavos)} · ${
+        payment.provedor === 'mercadopago'
+          ? 'Mercado Pago'
+          : payment.provedor === 'abacatepay'
+            ? 'AbacatePay (legado)'
+            : 'sem cobrança criada'
+      }`,
     );
     addEvent(
       events,
@@ -428,7 +422,7 @@ function CancellationAudit({
           <p className="mt-1 font-mono text-xs">Referência: {refund.referencia}</p>
           <p className="mt-2 text-xs">{refund.observacao}</p>
           <p className="mt-2 text-xs font-semibold">
-            Status AbacatePay preservado no registro: {refund.status_pagamento_no_registro}
+            Status do provedor preservado no registro: {refund.status_pagamento_no_registro}
           </p>
         </div>
       )}
@@ -448,31 +442,13 @@ export default async function SolicitacaoDetailPage({
   const [
     { data: requestData, error: requestError },
     { data: addressData },
-    { data: paymentData },
+    paymentResult,
     { data: payoutData },
     adminContext,
   ] = await Promise.all([
     supabase.from('solicitacoes').select('*').eq('id', id).single(),
     supabase.from('enderecos').select('*').eq('solicitacao_id', id),
-    supabase
-      .from('pagamentos')
-      .select(`
-        id,
-        tipo_pagamento,
-        status,
-        valor_centavos,
-        abacatepay_billing_id,
-        url_pagamento,
-        created_at,
-        pago_em,
-        conciliacao_verificada_em,
-        conciliacao_tentativas,
-        conciliacao_nao_encontrado_tentativas,
-        conciliacao_encerrada_em,
-        conciliacao_motivo
-      `)
-      .eq('solicitacao_id', id)
-      .order('created_at', { ascending: true }),
+    getAdminRequestPayments(supabase, id),
     supabase
       .from('repasses_motorista')
       .select('id, valor, status, pago_em, created_at, driver_profiles!motorista_id(chave_pix)')
@@ -494,7 +470,7 @@ export default async function SolicitacaoDetailPage({
 
   const request = requestData as unknown as RequestRow;
   const addresses = (addressData ?? []) as unknown as AddressRow[];
-  const payments = (paymentData ?? []) as unknown as PaymentDetail[];
+  const payments = paymentResult.items as PaymentDetail[];
   const payout = payoutData as unknown as PayoutDetail | null;
   const profileIds = [request.usuario_id, request.motorista_id].filter(
     (value): value is string => Boolean(value),
@@ -749,8 +725,24 @@ export default async function SolicitacaoDetailPage({
                         Pagamento {payment.tipo_pagamento}
                       </p>
                       <p className="mt-1 font-mono text-xs text-zinc-400">
-                        {payment.abacatepay_billing_id ?? 'Sem billing ID'}
+                        {payment.provedor === 'mercadopago'
+                          ? 'Mercado Pago'
+                          : payment.provedor === 'abacatepay'
+                            ? 'AbacatePay (legado)'
+                            : 'Sem cobrança criada'}
+                        {' · '}
+                        {payment.mercadopago_payment_id ??
+                          payment.abacatepay_billing_id ??
+                          'sem referência'}
                       </p>
+                      {payment.mercadopago_environment && (
+                        <p className="mt-1 text-xs text-zinc-400">
+                          {payment.mercadopago_environment}
+                          {payment.mercadopago_status_detail
+                            ? ` · ${payment.mercadopago_status_detail}`
+                            : ''}
+                        </p>
+                      )}
                     </div>
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${

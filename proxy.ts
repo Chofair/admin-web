@@ -23,6 +23,7 @@ const protectedRoutes = [
   '/revisoes-corridas',
   '/cancelamentos-pagamento',
   '/pagamentos',
+  '/google-maps',
 ] as const;
 
 function isProtectedPath(pathname: string) {
@@ -210,5 +211,6 @@ export const config = {
     '/revisoes-corridas/:path*',
     '/cancelamentos-pagamento/:path*',
     '/pagamentos/:path*',
+    '/google-maps/:path*',
   ],
 };

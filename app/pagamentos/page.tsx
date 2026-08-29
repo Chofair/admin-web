@@ -4,32 +4,18 @@ import NavBar from '@/components/NavBar';
 import SafeExternalLink from '@/components/SafeExternalLink';
 import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
 import { requireAdmin } from '@/lib/auth';
+import {
+  listAdminPayments,
+  type AdminPaymentItem,
+  type PaymentEnvironment,
+  type PaymentProvider,
+} from '@/lib/admin-operations';
 import type { createSupabaseServerClient } from '@/lib/supabase-server';
 import { confirmarRepasse, reverterRepasse } from './actions';
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
-type PaymentRow = {
-  id: string;
-  solicitacao_id: string;
-  abacatepay_billing_id: string | null;
-  url_pagamento: string | null;
-  valor_centavos: number;
-  status: string;
-  tipo_pagamento: 'inicial' | 'excedente';
-  pago_em: string | null;
-  created_at: string;
-  conciliacao_verificada_em: string | null;
-  conciliacao_tentativas: number;
-  conciliacao_nao_encontrado_tentativas: number;
-  conciliacao_encerrada_em: string | null;
-  conciliacao_motivo: string | null;
-  solicitacoes: {
-    usuario_id: string;
-    tipo_solicitacao: string;
-  } | null;
-  clienteNome: string | null;
-};
+type PaymentRow = AdminPaymentItem;
 
 type RepasseRow = {
   id: string;
@@ -82,6 +68,12 @@ const repasseStatusColors: Record<string, string> = {
 
 const validRepasseStatuses = ['pendente', 'pago', 'cancelado'];
 
+function getProviderLabel(provider: PaymentProvider) {
+  if (provider === 'mercadopago') return 'Mercado Pago';
+  if (provider === 'abacatepay') return 'AbacatePay (legado)';
+  return 'Sem cobrança criada';
+}
+
 async function getRepasses(
   supabase: SupabaseServerClient,
   filter?: string,
@@ -116,67 +108,6 @@ async function getRepasses(
   }
 
   return (data ?? []) as unknown as RepasseRow[];
-}
-
-async function getPagamentos(
-  supabase: SupabaseServerClient,
-  filter?: string,
-): Promise<PaymentRow[]> {
-  let query = supabase
-    .from('pagamentos')
-    .select(`
-      id,
-      solicitacao_id,
-      abacatepay_billing_id,
-      url_pagamento,
-      valor_centavos,
-      status,
-      tipo_pagamento,
-      pago_em,
-      created_at,
-      conciliacao_verificada_em,
-      conciliacao_tentativas,
-      conciliacao_nao_encontrado_tentativas,
-      conciliacao_encerrada_em,
-      conciliacao_motivo,
-      solicitacoes!solicitacao_id(usuario_id, tipo_solicitacao)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  if (filter && validPaymentStatuses.includes(filter)) {
-    query = query.eq('status', filter);
-  }
-
-  const { data, error } = await query;
-  if (error) {
-    console.error('Erro ao buscar pagamentos:', {
-      code: error.code,
-      message: error.message,
-    });
-    return [];
-  }
-
-  const payments = (data ?? []) as unknown as Omit<PaymentRow, 'clienteNome'>[];
-  const userIds = [
-    ...new Set(
-      payments
-        .map((payment) => payment.solicitacoes?.usuario_id)
-        .filter((value): value is string => Boolean(value)),
-    ),
-  ];
-
-  const { data: clients } = userIds.length
-    ? await supabase.from('profiles').select('id, name').in('id', userIds)
-    : { data: [] as { id: string; name: string | null }[] };
-  const namesById = new Map((clients ?? []).map((client) => [client.id, client.name]));
-
-  return payments.map((payment) => ({
-    ...payment,
-    clienteNome: payment.solicitacoes?.usuario_id
-      ? namesById.get(payment.solicitacoes.usuario_id) ?? null
-      : null,
-  }));
 }
 
 function ReconciliationCell({ payment }: { payment: PaymentRow }) {
@@ -226,14 +157,29 @@ function ReconciliationCell({ payment }: { payment: PaymentRow }) {
 export default async function PagamentosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; repasseFilter?: string }>;
+  searchParams: Promise<{
+    filter?: string;
+    provider?: string;
+    environment?: string;
+    cursor?: string;
+    repasseFilter?: string;
+  }>;
 }) {
-  const { filter, repasseFilter } = await searchParams;
+  const { filter, provider, environment, cursor, repasseFilter } = await searchParams;
   const { supabase } = await requireAdmin();
-  const [payments, payouts] = await Promise.all([
-    getPagamentos(supabase, filter),
+  const safeStatus = filter && validPaymentStatuses.includes(filter) ? filter : undefined;
+  const safeProvider = ['mercadopago', 'abacatepay', 'sem_provedor'].includes(provider ?? '')
+    ? (provider as PaymentProvider)
+    : undefined;
+  const safeEnvironment = ['sandbox', 'production'].includes(environment ?? '')
+    ? (environment as PaymentEnvironment)
+    : undefined;
+  const safeCursor = cursor && !Number.isNaN(Date.parse(cursor)) ? cursor : undefined;
+  const [paymentQueue, payouts] = await Promise.all([
+    listAdminPayments(supabase, safeStatus, safeProvider, safeEnvironment, safeCursor),
     getRepasses(supabase, repasseFilter),
   ]);
+  const payments = paymentQueue.items;
 
   const filters = [
     { key: undefined, label: 'Todos' },
@@ -274,7 +220,7 @@ export default async function PagamentosPage({
               Pagamentos
             </h1>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              {payments.length} registros nesta página
+              {payments.length} registros nesta página · dados restritos a administradores
             </p>
           </div>
           <Link
@@ -285,6 +231,12 @@ export default async function PagamentosPage({
             Cancelamentos e reembolsos
           </Link>
         </div>
+
+        {paymentQueue.error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+            {paymentQueue.error} Confirme se a migration financeira foi aplicada.
+          </div>
+        )}
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950">
@@ -305,10 +257,52 @@ export default async function PagamentosPage({
           </div>
         </div>
 
+        <form
+          method="get"
+          className="mb-4 grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900 sm:grid-cols-3"
+        >
+          <label className="grid gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Provedor
+            <select
+              name="provider"
+              defaultValue={safeProvider ?? ''}
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            >
+              <option value="">Todos</option>
+              <option value="mercadopago">Mercado Pago</option>
+              <option value="abacatepay">AbacatePay (legado)</option>
+              <option value="sem_provedor">Sem cobrança criada</option>
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Ambiente Mercado Pago
+            <select
+              name="environment"
+              defaultValue={safeEnvironment ?? ''}
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            >
+              <option value="">Todos</option>
+              <option value="production">Produção</option>
+              <option value="sandbox">Sandbox</option>
+            </select>
+          </label>
+          {safeStatus && <input type="hidden" name="filter" value={safeStatus} />}
+          <button
+            type="submit"
+            className="self-end rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
+          >
+            Aplicar filtros
+          </button>
+        </form>
+
         <div className="mb-4 flex flex-wrap gap-2">
           {filters.map((item) => {
             const active = filter === item.key || (!filter && !item.key);
-            const href = item.key ? `/pagamentos?filter=${item.key}` : '/pagamentos';
+            const query = new URLSearchParams();
+            if (item.key) query.set('filter', item.key);
+            if (safeProvider) query.set('provider', safeProvider);
+            if (safeEnvironment) query.set('environment', safeEnvironment);
+            const href = query.size ? `/pagamentos?${query.toString()}` : '/pagamentos';
             return (
               <Link
                 key={item.label}
@@ -367,7 +361,7 @@ export default async function PagamentosPage({
                   >
                     <td className="px-4 py-3">
                       <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                        {payment.clienteNome ?? '—'}
+                        {payment.usuario_nome ?? '—'}
                       </p>
                       <Link
                         href={`/solicitacoes/${payment.solicitacao_id}`}
@@ -400,10 +394,32 @@ export default async function PagamentosPage({
                       </span>
                       <p
                         className="mt-2 max-w-48 truncate font-mono text-[11px] text-zinc-400"
-                        title={payment.abacatepay_billing_id ?? undefined}
+                        title={
+                          payment.mercadopago_payment_id ??
+                          payment.abacatepay_billing_id ??
+                          undefined
+                        }
                       >
-                        {payment.abacatepay_billing_id ?? 'Sem billing ID'}
+                        {getProviderLabel(payment.provedor)}
                       </p>
+                      <p className="mt-1 max-w-48 truncate font-mono text-[11px] text-zinc-400">
+                        {payment.mercadopago_payment_id ??
+                          payment.abacatepay_billing_id ??
+                          'Sem referência do provedor'}
+                      </p>
+                      {payment.mercadopago_environment && (
+                        <p className="mt-1 text-[11px] text-zinc-400">
+                          {payment.mercadopago_environment}
+                          {payment.mercadopago_status_detail
+                            ? ` · ${payment.mercadopago_status_detail}`
+                            : ''}
+                        </p>
+                      )}
+                      {payment.metodos.length > 0 && (
+                        <p className="mt-1 text-[11px] text-zinc-400">
+                          {payment.metodos.join(' / ')}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <ReconciliationCell payment={payment} />
@@ -428,6 +444,32 @@ export default async function PagamentosPage({
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="mt-5 flex items-center justify-between">
+          {safeCursor ? (
+            <Link
+              href="/pagamentos"
+              className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-300"
+            >
+              Voltar ao início
+            </Link>
+          ) : (
+            <span />
+          )}
+          {paymentQueue.nextCursor && payments.length === paymentQueue.limit && (
+            <Link
+              href={`/pagamentos?${new URLSearchParams({
+                ...(safeStatus ? { filter: safeStatus } : {}),
+                ...(safeProvider ? { provider: safeProvider } : {}),
+                ...(safeEnvironment ? { environment: safeEnvironment } : {}),
+                cursor: paymentQueue.nextCursor,
+              }).toString()}`}
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            >
+              Carregar mais antigos
+            </Link>
+          )}
         </div>
 
         <div className="mb-6 mt-10">
