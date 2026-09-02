@@ -1,25 +1,14 @@
 'use server';
 
 import { requireAdmin } from '@/lib/auth';
+import { updateAdminDriverStatus } from '@/lib/admin-driver-vehicles';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 export async function aprovarMotorista(motoristaId: string) {
   const { supabase } = await requireAdmin();
 
-  const { error } = await supabase
-    .from('driver_profiles')
-    .update({
-      status_motorista: 'aprovado',
-      verificado: true,
-      data_aprovacao: new Date().toISOString(),
-      motivo_rejeicao: null,
-    })
-    .eq('id', motoristaId);
-
-  if (error) {
-    throw new Error(`Erro ao aprovar motorista: ${error.message}`);
-  }
+  await updateAdminDriverStatus(supabase, motoristaId, 'aprovar');
 
   revalidatePath(`/motoristas/${motoristaId}`);
   revalidatePath('/motoristas');
@@ -36,18 +25,7 @@ export async function rejeitarMotorista(formData: FormData) {
     throw new Error('ID do motorista e motivo são obrigatórios');
   }
 
-  const { error } = await supabase
-    .from('driver_profiles')
-    .update({
-      status_motorista: 'rejeitado',
-      verificado: false,
-      motivo_rejeicao: motivo.trim(),
-    })
-    .eq('id', motoristaId);
-
-  if (error) {
-    throw new Error(`Erro ao rejeitar motorista: ${error.message}`);
-  }
+  await updateAdminDriverStatus(supabase, motoristaId, 'rejeitar', motivo.trim());
 
   revalidatePath(`/motoristas/${motoristaId}`);
   revalidatePath('/motoristas');
@@ -57,17 +35,7 @@ export async function rejeitarMotorista(formData: FormData) {
 export async function suspenderMotorista(motoristaId: string) {
   const { supabase } = await requireAdmin();
 
-  const { error } = await supabase
-    .from('driver_profiles')
-    .update({
-      status_motorista: 'suspenso',
-      verificado: false,
-    })
-    .eq('id', motoristaId);
-
-  if (error) {
-    throw new Error(`Erro ao suspender motorista: ${error.message}`);
-  }
+  await updateAdminDriverStatus(supabase, motoristaId, 'suspender');
 
   revalidatePath(`/motoristas/${motoristaId}`);
   revalidatePath('/motoristas');
@@ -77,17 +45,7 @@ export async function suspenderMotorista(motoristaId: string) {
 export async function reativarMotorista(motoristaId: string) {
   const { supabase } = await requireAdmin();
 
-  const { error } = await supabase
-    .from('driver_profiles')
-    .update({
-      status_motorista: 'aprovado',
-      verificado: true,
-    })
-    .eq('id', motoristaId);
-
-  if (error) {
-    throw new Error(`Erro ao reativar motorista: ${error.message}`);
-  }
+  await updateAdminDriverStatus(supabase, motoristaId, 'reativar');
 
   revalidatePath(`/motoristas/${motoristaId}`);
   revalidatePath('/motoristas');

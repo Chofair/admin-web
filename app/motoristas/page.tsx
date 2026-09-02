@@ -1,14 +1,15 @@
 import { requireAdmin } from '@/lib/auth';
+import {
+  listAdminDrivers,
+  type AdminDriverSummary,
+} from '@/lib/admin-driver-vehicles';
 import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 
-type MotoristaSummary = {
-  id: string;
-  status_motorista: string;
-  cnh_numero: string | null;
-  cnh_validade: string | null;
-  created_at: string;
+const PAGE_SIZE = 50;
+
+type MotoristaSummary = AdminDriverSummary & {
   profiles: {
     name: string | null;
     cpf: string | null;
@@ -16,33 +17,39 @@ type MotoristaSummary = {
   } | null;
 };
 
-async function getMotoristas(filter?: string) {
+async function getMotoristas(filter: string | undefined, page: number) {
   const { supabase } = await requireAdmin();
-  let query = supabase
-    .from('driver_profiles')
-    .select('id, status_motorista, cnh_numero, cnh_validade, created_at')
-    .order('created_at', { ascending: false });
-
-  if (filter && ['pendente', 'aprovado', 'rejeitado', 'suspenso'].includes(filter)) {
-    query = query.eq('status_motorista', filter);
-  }
-
-  const { data, error } = await query;
-  if (error) {
-    console.error('Erro ao buscar motoristas:', error);
-    return [];
-  }
-  const motoristas = (data ?? []) as unknown as Omit<MotoristaSummary, 'profiles'>[];
+  const status =
+    filter && ['pendente', 'aprovado', 'rejeitado', 'suspenso'].includes(filter)
+      ? filter
+      : undefined;
+  const result = await listAdminDrivers(supabase, {
+    status,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
+  });
+  const motoristas = result.items;
   const profiles = await getAdminProfilesByIds(
     supabase,
     motoristas.map((motorista) => motorista.id),
   );
   const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
 
-  return motoristas.map((motorista) => ({
-    ...motorista,
-    profiles: profilesById.get(motorista.id) ?? null,
-  }));
+  return {
+    items: motoristas.map((motorista) => ({
+      ...motorista,
+      profiles: profilesById.get(motorista.id) ?? null,
+    })) as MotoristaSummary[],
+    total: result.total,
+  };
+}
+
+function buildPageHref(filter: string | undefined, page: number) {
+  const params = new URLSearchParams();
+  if (filter) params.set('filter', filter);
+  if (page > 1) params.set('page', String(page));
+  const search = params.toString();
+  return search ? `/motoristas?${search}` : '/motoristas';
 }
 
 function formatDate(dateStr?: string) {
@@ -74,10 +81,13 @@ const statusLabels: Record<string, string> = {
 export default async function MotoristasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; page?: string }>;
 }) {
-  const { filter } = await searchParams;
-  const motoristas = await getMotoristas(filter);
+  const { filter, page: pageParam } = await searchParams;
+  const requestedPage = Number.parseInt(pageParam ?? '1', 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const { items: motoristas, total } = await getMotoristas(filter, page);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const filters = [
     { key: undefined, label: 'Todos' },
@@ -94,14 +104,14 @@ export default async function MotoristasPage({
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-200">Motoristas</h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{motoristas.length} motoristas</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{total} motoristas</p>
           </div>
         </div>
 
         <div className="flex gap-2 mb-4 flex-wrap">
           {filters.map((f) => {
             const isActive = filter === f.key || (!filter && !f.key);
-            const href = f.key ? `/motoristas?filter=${f.key}` : '/motoristas';
+            const href = buildPageHref(f.key, 1);
             return (
               <Link
                 key={f.label}
@@ -183,6 +193,36 @@ export default async function MotoristasPage({
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <nav aria-label="Paginação de motoristas" className="mt-5 flex items-center justify-between gap-3 text-sm">
+            <Link
+              href={buildPageHref(filter, Math.max(1, page - 1))}
+              aria-disabled={page <= 1}
+              className={`rounded-lg border px-3 py-2 ${
+                page <= 1
+                  ? 'pointer-events-none border-zinc-200 text-zinc-400 dark:border-zinc-800'
+                  : 'border-zinc-300 text-zinc-700 hover:bg-white dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900'
+              }`}
+            >
+              Anterior
+            </Link>
+            <span className="text-zinc-500 dark:text-zinc-400">
+              Página {Math.min(page, totalPages)} de {totalPages}
+            </span>
+            <Link
+              href={buildPageHref(filter, Math.min(totalPages, page + 1))}
+              aria-disabled={page >= totalPages}
+              className={`rounded-lg border px-3 py-2 ${
+                page >= totalPages
+                  ? 'pointer-events-none border-zinc-200 text-zinc-400 dark:border-zinc-800'
+                  : 'border-zinc-300 text-zinc-700 hover:bg-white dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900'
+              }`}
+            >
+              Próxima
+            </Link>
+          </nav>
+        )}
       </main>
     </div>
   );
