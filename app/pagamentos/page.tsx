@@ -6,7 +6,9 @@ import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
 import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import {
+  listAdminPayouts,
   listAdminPayments,
+  type AdminPayoutStatus,
   type AdminPaymentItem,
   type PaymentEnvironment,
   type PaymentProvider,
@@ -67,7 +69,7 @@ const repasseStatusColors: Record<string, string> = {
   cancelado: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
 };
 
-const validRepasseStatuses = ['pendente', 'pago', 'cancelado'];
+const validRepasseStatuses: AdminPayoutStatus[] = ['pendente', 'pago', 'cancelado'];
 
 function getProviderLabel(provider: PaymentProvider) {
   if (provider === 'mercadopago') return 'Mercado Pago';
@@ -79,36 +81,12 @@ async function getRepasses(
   supabase: SupabaseServerClient,
   filter?: string,
 ): Promise<RepasseRow[]> {
-  let query = supabase
-    .from('repasses_motorista')
-    .select(`
-      id,
-      solicitacao_id,
-      motorista_id,
-      valor,
-      status,
-      pago_em,
-      created_at,
-      solicitacoes!solicitacao_id(preco_total, preco_final, tipo_solicitacao, data_servico),
-      driver_profiles!motorista_id(chave_pix)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  if (filter && validRepasseStatuses.includes(filter)) {
-    query = query.eq('status', filter);
-  }
-
-  const { data, error } = await query;
-  if (error) {
-    console.error('Erro ao buscar repasses:', {
-      code: error.code,
-      message: error.message,
-    });
-    return [];
-  }
-
-  const payouts = (data ?? []) as unknown as RepasseRow[];
+  const status =
+    filter && validRepasseStatuses.includes(filter as AdminPayoutStatus)
+      ? (filter as AdminPayoutStatus)
+      : undefined;
+  const { items } = await listAdminPayouts(supabase, { status, limit: 50 });
+  const payouts = items as unknown as RepasseRow[];
   const profiles = await getAdminProfilesByIds(
     supabase,
     payouts.map((payout) => payout.motorista_id),

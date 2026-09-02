@@ -1,5 +1,6 @@
 import { requireAdmin } from '@/lib/auth';
 import { getAdminProfile } from '@/lib/admin-profiles';
+import { listAdminRequests } from '@/lib/admin-operations';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 
@@ -15,7 +16,7 @@ function formatCPF(cpf?: string | null) {
   return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
 }
 
-function formatCurrency(val?: number) {
+function formatCurrency(val?: number | null) {
   if (val == null) return '—';
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -37,15 +38,11 @@ export default async function UsuarioDetailPage({
   const { id } = await params;
 
   const { supabase } = await requireAdmin();
-  const [profile, { data: solicitacoes }] = await Promise.all([
+  const [profile, requestsResult] = await Promise.all([
     getAdminProfile(supabase, id),
-    supabase
-      .from('solicitacoes')
-      .select('id, tipo_solicitacao, data_servico, horario_inicio, status, preco_total, created_at')
-      .eq('usuario_id', id)
-      .order('created_at', { ascending: false })
-      .limit(20),
+    listAdminRequests(supabase, { userId: id, limit: 20 }),
   ]);
+  const solicitacoes = requestsResult.items;
 
   if (!profile) {
     return (

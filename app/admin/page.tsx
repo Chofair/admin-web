@@ -15,7 +15,7 @@ import {
 import NavBar from '@/components/NavBar';
 import { countAdminProfiles } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
-import { getOperationalAlerts } from '@/lib/admin-operations';
+import { countAdminRequests, getOperationalAlerts } from '@/lib/admin-operations';
 
 async function getDashboardStats() {
   const { supabase } = await requireAdmin();
@@ -23,9 +23,9 @@ async function getDashboardStats() {
     totalUsers,
     { count: totalDrivers },
     { count: pendingDrivers },
-    { count: totalSolicitacoes },
-    { count: pendingSolicitacoes },
-    { count: activeSolicitacoes },
+    totalSolicitacoes,
+    pendingSolicitacoes,
+    activeSolicitacoes,
     { count: pendingVehicles },
     { count: totalPagamentos },
     { count: paidPagamentos },
@@ -37,15 +37,9 @@ async function getDashboardStats() {
       .from('driver_profiles')
       .select('id', { count: 'exact', head: true })
       .eq('status_motorista', 'pendente'),
-    supabase.from('solicitacoes').select('id', { count: 'exact', head: true }),
-    supabase
-      .from('solicitacoes')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pendente'),
-    supabase
-      .from('solicitacoes')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['confirmada', 'em_andamento']),
+    countAdminRequests(supabase),
+    countAdminRequests(supabase, ['pendente']),
+    countAdminRequests(supabase, ['confirmada', 'em_andamento']),
     supabase
       .from('veiculos')
       .select('id', { count: 'exact', head: true })
@@ -67,9 +61,9 @@ async function getDashboardStats() {
     totalUsers,
     totalDrivers: totalDrivers ?? 0,
     pendingDrivers: pendingDrivers ?? 0,
-    totalSolicitacoes: totalSolicitacoes ?? 0,
-    pendingSolicitacoes: pendingSolicitacoes ?? 0,
-    activeSolicitacoes: activeSolicitacoes ?? 0,
+    totalSolicitacoes,
+    pendingSolicitacoes,
+    activeSolicitacoes,
     pendingVehicles: pendingVehicles ?? 0,
     totalPagamentos: totalPagamentos ?? 0,
     paidPagamentos: paidPagamentos ?? 0,

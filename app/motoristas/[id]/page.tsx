@@ -1,5 +1,6 @@
 import { requireAdmin } from '@/lib/auth';
 import { getAdminProfile } from '@/lib/admin-profiles';
+import { listAdminRequests } from '@/lib/admin-operations';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 import { aprovarMotorista, rejeitarMotorista, suspenderMotorista, reativarMotorista } from './actions';
@@ -17,7 +18,7 @@ function formatCPF(cpf?: string | null) {
   return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
 }
 
-function formatCurrency(val?: number) {
+function formatCurrency(val?: number | null) {
   if (val == null) return '—';
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -49,7 +50,7 @@ export default async function MotoristaDetailPage({
   const { msg } = await searchParams;
   const { supabase } = await requireAdmin();
 
-  const [{ data: motorista }, profile, { data: veiculos }, { data: documentos }, { data: corridas }] =
+  const [{ data: motorista }, profile, { data: veiculos }, { data: documentos }, requestsResult] =
     await Promise.all([
       supabase
         .from('driver_profiles')
@@ -68,13 +69,9 @@ export default async function MotoristaDetailPage({
         .select('*')
         .eq('motorista_id', id)
         .order('data_upload', { ascending: false }),
-      supabase
-        .from('solicitacoes')
-        .select('id, tipo_solicitacao, data_servico, horario_inicio, status, preco_motorista, created_at')
-        .eq('motorista_id', id)
-        .order('created_at', { ascending: false })
-        .limit(10),
+      listAdminRequests(supabase, { driverId: id, limit: 10 }),
     ]);
+  const corridas = requestsResult.items;
 
   if (!motorista) {
     return (

@@ -2,22 +2,13 @@ import Link from 'next/link';
 import NavBar from '@/components/NavBar';
 import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
+import {
+  listAdminRequests,
+  type AdminRequestListItem,
+  type AdminRequestStatus,
+} from '@/lib/admin-operations';
 
-type RequestListRow = {
-  id: string;
-  tipo_solicitacao: string;
-  data_servico: string;
-  horario_inicio: string;
-  horario_fim: string;
-  duracao_horas: number;
-  status: string;
-  preco_total: number | null;
-  preco_final: number | null;
-  preco_tempo_excedido: number | null;
-  revisao_solicitada_em: string | null;
-  created_at: string;
-  usuario_id: string;
-  motorista_id: string | null;
+type RequestListRow = AdminRequestListItem & {
   nomeUsuario: string;
 };
 
@@ -40,7 +31,7 @@ const statusColors: Record<string, string> = {
   cancelada: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
 };
 
-const validStatuses = [
+const validStatuses: AdminRequestStatus[] = [
   'pendente',
   'confirmada',
   'em_andamento',
@@ -51,41 +42,14 @@ const validStatuses = [
 
 async function getRequests(filter?: string): Promise<RequestListRow[]> {
   const { supabase } = await requireAdmin();
-  let query = supabase
-    .from('solicitacoes')
-    .select(`
-      id,
-      tipo_solicitacao,
-      data_servico,
-      horario_inicio,
-      horario_fim,
-      duracao_horas,
-      status,
-      preco_total,
-      preco_final,
-      preco_tempo_excedido,
-      revisao_solicitada_em,
-      created_at,
-      usuario_id,
-      motorista_id
-    `)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  if (filter && validStatuses.includes(filter)) {
-    query = query.eq('status', filter);
-  }
-
-  const { data, error } = await query;
-  if (error) {
-    console.error('Erro ao buscar solicitações:', {
-      code: error.code,
-      message: error.message,
-    });
-    return [];
-  }
-
-  const requests = (data ?? []) as unknown as Omit<RequestListRow, 'nomeUsuario'>[];
+  const status =
+    filter && validStatuses.includes(filter as AdminRequestStatus)
+      ? (filter as AdminRequestStatus)
+      : undefined;
+  const { items: requests } = await listAdminRequests(supabase, {
+    statuses: status ? [status] : undefined,
+    limit: 50,
+  });
   const userIds = [
     ...new Set(requests.map((request) => request.usuario_id).filter(Boolean)),
   ];

@@ -6,6 +6,16 @@ export type AdminQueueStatus = 'aberta' | 'resolvida' | 'todas';
 export type RideReviewDecision = 'manter_cobranca' | 'isentar_excedente_cliente';
 export type PaymentProvider = 'mercadopago' | 'abacatepay' | 'sem_provedor';
 export type PaymentEnvironment = 'sandbox' | 'production';
+export type AdminRequestStatus =
+  | 'aguardando_pagamento'
+  | 'pagamento_expirado'
+  | 'pendente'
+  | 'confirmada'
+  | 'em_andamento'
+  | 'finalizada'
+  | 'concluida'
+  | 'cancelada';
+export type AdminPayoutStatus = 'pendente' | 'pago' | 'cancelado';
 export type ManualRefundMethod =
   | 'pix'
   | 'transferencia_bancaria'
@@ -175,6 +185,41 @@ export type AdminRequestDetail = {
   payout: Record<string, unknown> | null;
 };
 
+export type AdminRequestListItem = {
+  id: string;
+  usuario_id: string;
+  motorista_id: string | null;
+  tipo_solicitacao: string;
+  data_servico: string;
+  horario_inicio: string;
+  horario_fim: string;
+  duracao_horas: number;
+  status: AdminRequestStatus;
+  preco_total: number | null;
+  preco_final: number | null;
+  preco_motorista: number | null;
+  preco_tempo_excedido: number | null;
+  revisao_solicitada_em: string | null;
+  created_at: string;
+};
+
+export type AdminPayoutItem = {
+  id: string;
+  solicitacao_id: string;
+  motorista_id: string;
+  valor: number;
+  status: AdminPayoutStatus;
+  pago_em: string | null;
+  created_at: string;
+  solicitacoes: {
+    preco_total: number | null;
+    preco_final: number | null;
+    tipo_solicitacao: string;
+    data_servico: string;
+  };
+  driver_profiles: { chave_pix: string | null } | null;
+};
+
 export type OperationalAlerts = {
   revisoes_corridas_abertas: number;
   cancelamentos_abertos: number;
@@ -209,6 +254,16 @@ function parseQueue<T>(value: unknown): Omit<QueueResult<T>, 'error'> {
     items: Array.isArray(value.items) ? (value.items as T[]) : [],
     nextCursor: typeof value.next_cursor === 'string' ? value.next_cursor : null,
     limit: toSafeNumber(value.limit) || 50,
+  };
+}
+
+function parseAdminList<T>(value: unknown): { items: T[]; total: number } {
+  if (!isRecord(value)) return { items: [], total: 0 };
+
+  const parsedTotal = Number(value.total ?? 0);
+  return {
+    items: Array.isArray(value.items) ? (value.items as T[]) : [],
+    total: Number.isFinite(parsedTotal) ? parsedTotal : 0,
   };
 }
 
@@ -343,6 +398,67 @@ export async function getAdminRequestDetail(
       : [],
     payout: isRecord(data.repasse) ? data.repasse : null,
   };
+}
+
+export async function listAdminRequests(
+  supabase: SupabaseServerClient,
+  options: {
+    statuses?: AdminRequestStatus[];
+    userId?: string;
+    driverId?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+) {
+  const { data, error } = await supabase.rpc('admin_listar_solicitacoes', {
+    status_input: options.statuses ?? null,
+    usuario_id_input: options.userId ?? null,
+    motorista_id_input: options.driverId ?? null,
+    limite_input: options.limit ?? 50,
+    deslocamento_input: options.offset ?? 0,
+  });
+
+  if (error) {
+    console.error('Erro ao listar solicitacoes administrativas:', {
+      code: error.code,
+      message: error.message,
+    });
+    throw new Error('Nao foi possivel listar as solicitacoes administrativas.');
+  }
+
+  return parseAdminList<AdminRequestListItem>(data);
+}
+
+export async function countAdminRequests(
+  supabase: SupabaseServerClient,
+  statuses?: AdminRequestStatus[],
+) {
+  return (await listAdminRequests(supabase, { statuses, limit: 1 })).total;
+}
+
+export async function listAdminPayouts(
+  supabase: SupabaseServerClient,
+  options: {
+    status?: AdminPayoutStatus;
+    limit?: number;
+    offset?: number;
+  } = {},
+) {
+  const { data, error } = await supabase.rpc('admin_listar_repasses', {
+    status_input: options.status ?? null,
+    limite_input: options.limit ?? 50,
+    deslocamento_input: options.offset ?? 0,
+  });
+
+  if (error) {
+    console.error('Erro ao listar repasses administrativos:', {
+      code: error.code,
+      message: error.message,
+    });
+    throw new Error('Nao foi possivel listar os repasses administrativos.');
+  }
+
+  return parseAdminList<AdminPayoutItem>(data);
 }
 
 export async function getRequestAdminContext(
