@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import {
   formatVehicleFieldName,
@@ -110,8 +111,8 @@ export default async function VehicleDetailPage({
   const profileIds = [vehicle.motorista_id, vehicle.validado_por].filter(
     (profileId): profileId is string => Boolean(profileId)
   );
-  const [profilesResult, categoriesResult, signedUrlResult, minimumYearResult] = await Promise.all([
-    supabase.from('profiles').select('id, name, cpf, telefone').in('id', profileIds),
+  const [profileRows, categoriesResult, signedUrlResult, minimumYearResult] = await Promise.all([
+    getAdminProfilesByIds(supabase, profileIds),
     supabase
       .from('veiculo_categorias')
       .select('categorias_veiculo!veiculo_categorias_categoria_id_fkey(label, slug)')
@@ -127,13 +128,12 @@ export default async function VehicleDetailPage({
       .maybeSingle(),
   ]);
 
-  if (profilesResult.error) console.error('Erro ao buscar responsáveis pelo veículo:', profilesResult.error);
   if (categoriesResult.error) console.error('Erro ao buscar categorias do veículo:', categoriesResult.error);
   if (signedUrlResult.error) console.error('Erro ao gerar URL temporária do CRLV-e:', signedUrlResult.error.message);
   if (minimumYearResult.error) console.error('Erro ao buscar ano mínimo do veículo:', minimumYearResult.error);
 
   const profiles = new Map(
-    ((profilesResult.data ?? []) as ProfileSummary[]).map((profile) => [profile.id, profile])
+    (profileRows as ProfileSummary[]).map((profile) => [profile.id, profile])
   );
   const driver = profiles.get(vehicle.motorista_id);
   const reviewer = vehicle.validado_por ? profiles.get(vehicle.validado_por) : null;

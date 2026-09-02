@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import {
   getVehicleStatusLabel,
@@ -75,10 +76,8 @@ async function getVehicles(filter: string, query: string, page: number) {
   const vehicles = (data ?? []) as VehicleSummary[];
   const driverIds = [...new Set(vehicles.map((vehicle) => vehicle.motorista_id))];
   const vehicleIds = vehicles.map((vehicle) => vehicle.id);
-  const [profilesResult, categoriesResult] = await Promise.all([
-    driverIds.length
-      ? supabase.from('profiles').select('id, name, cpf').in('id', driverIds)
-      : Promise.resolve({ data: [], error: null }),
+  const [profileRows, categoriesResult] = await Promise.all([
+    getAdminProfilesByIds(supabase, driverIds),
     vehicleIds.length
       ? supabase
           .from('veiculo_categorias')
@@ -87,11 +86,10 @@ async function getVehicles(filter: string, query: string, page: number) {
       : Promise.resolve({ data: [], error: null }),
   ]);
 
-  if (profilesResult.error) console.error('Erro ao buscar motoristas dos veículos:', profilesResult.error);
   if (categoriesResult.error) console.error('Erro ao buscar categorias dos veículos:', categoriesResult.error);
 
   const profiles = new Map(
-    ((profilesResult.data ?? []) as ProfileSummary[]).map((profile) => [profile.id, profile])
+    (profileRows as ProfileSummary[]).map((profile) => [profile.id, profile])
   );
   const categories = new Map<string, string[]>();
   for (const row of (categoriesResult.data ?? []) as unknown as CategoryRow[]) {

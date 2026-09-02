@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/auth';
+import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 
@@ -19,7 +20,7 @@ async function getMotoristas(filter?: string) {
   const { supabase } = await requireAdmin();
   let query = supabase
     .from('driver_profiles')
-    .select('id, status_motorista, cnh_numero, cnh_validade, created_at, profiles(name, cpf, telefone)')
+    .select('id, status_motorista, cnh_numero, cnh_validade, created_at')
     .order('created_at', { ascending: false });
 
   if (filter && ['pendente', 'aprovado', 'rejeitado', 'suspenso'].includes(filter)) {
@@ -31,7 +32,17 @@ async function getMotoristas(filter?: string) {
     console.error('Erro ao buscar motoristas:', error);
     return [];
   }
-  return (data ?? []) as unknown as MotoristaSummary[];
+  const motoristas = (data ?? []) as unknown as Omit<MotoristaSummary, 'profiles'>[];
+  const profiles = await getAdminProfilesByIds(
+    supabase,
+    motoristas.map((motorista) => motorista.id),
+  );
+  const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
+
+  return motoristas.map((motorista) => ({
+    ...motorista,
+    profiles: profilesById.get(motorista.id) ?? null,
+  }));
 }
 
 function formatDate(dateStr?: string) {

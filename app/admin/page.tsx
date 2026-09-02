@@ -13,13 +13,14 @@ import {
   Users,
 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import { countAdminProfiles } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import { getOperationalAlerts } from '@/lib/admin-operations';
 
 async function getDashboardStats() {
   const { supabase } = await requireAdmin();
   const [
-    { count: totalUsers },
+    totalUsers,
     { count: totalDrivers },
     { count: pendingDrivers },
     { count: totalSolicitacoes },
@@ -30,10 +31,7 @@ async function getDashboardStats() {
     { count: paidPagamentos },
     operationalAlerts,
   ] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('terms_role', 'user'),
+    countAdminProfiles(supabase, 'user'),
     supabase.from('driver_profiles').select('id', { count: 'exact', head: true }),
     supabase
       .from('driver_profiles')
@@ -66,7 +64,7 @@ async function getDashboardStats() {
   ]);
 
   return {
-    totalUsers: totalUsers ?? 0,
+    totalUsers,
     totalDrivers: totalDrivers ?? 0,
     pendingDrivers: pendingDrivers ?? 0,
     totalSolicitacoes: totalSolicitacoes ?? 0,

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { createSupabaseServerClient } from '@/lib/supabase-server';
+import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -236,13 +237,12 @@ export async function getMapsMonitoringDashboard(
     ),
   ];
 
-  const profilesResult = administratorIds.length
-    ? await supabase.from('profiles').select('id, name').in('id', administratorIds)
-    : { data: [] as Array<{ id: string; name: string | null }>, error: null };
-
-  logQueryError('administradores dos alertas', profilesResult.error);
+  const administratorProfiles = await getAdminProfilesByIds(
+    supabase,
+    administratorIds,
+  );
   const administratorNames = new Map(
-    (profilesResult.data ?? []).map((profile) => [profile.id, profile.name]),
+    administratorProfiles.map((profile) => [profile.id, profile.name]),
   );
 
   return {
