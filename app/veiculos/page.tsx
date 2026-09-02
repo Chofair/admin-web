@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import {
+  listAdminVehicles,
+  type AdminVehicleSummary,
+} from '@/lib/admin-driver-vehicles';
 import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import {
@@ -10,19 +14,6 @@ import {
 } from '@/lib/vehicle-validation';
 
 const PAGE_SIZE = 25;
-
-type VehicleSummary = {
-  id: string;
-  motorista_id: string;
-  placa: string;
-  marca: string | null;
-  modelo: string | null;
-  ano: number | null;
-  status_validacao: string;
-  campos_pendentes: string[] | null;
-  ativo: boolean;
-  created_at: string;
-};
 
 type ProfileSummary = { id: string; name: string | null; cpf: string | null };
 type CategoryRelationship = { label: string };
@@ -48,32 +39,28 @@ async function getVehicles(filter: string, query: string, page: number) {
   const { supabase } = await requireAdmin();
   const from = (page - 1) * PAGE_SIZE;
 
-  let vehiclesQuery = supabase
-    .from('veiculos')
-    .select(
-      'id, motorista_id, placa, marca, modelo, ano, status_validacao, campos_pendentes, ativo, created_at',
-      { count: 'exact' }
-    )
-    .order('created_at', { ascending: false })
-    .range(from, from + PAGE_SIZE - 1);
-
+  let statuses: string[] | undefined;
   if (filter === 'pendentes') {
-    vehiclesQuery = vehiclesQuery.in('status_validacao', PENDING_VEHICLE_STATUSES);
+    statuses = [...PENDING_VEHICLE_STATUSES];
   } else if (filter === 'aprovados') {
-    vehiclesQuery = vehiclesQuery.eq('status_validacao', 'aprovado');
+    statuses = ['aprovado'];
   } else if (filter === 'rejeitados') {
-    vehiclesQuery = vehiclesQuery.eq('status_validacao', 'rejeitado');
+    statuses = ['rejeitado'];
   }
 
-  if (query) vehiclesQuery = vehiclesQuery.ilike('placa', '%' + query + '%');
-
-  const { data, error, count } = await vehiclesQuery;
-  if (error) {
-    console.error('Erro ao buscar veículos para revisão:', error);
+  let vehiclesResult;
+  try {
+    vehiclesResult = await listAdminVehicles(supabase, {
+      statuses,
+      plate: query || undefined,
+      limit: PAGE_SIZE,
+      offset: from,
+    });
+  } catch {
     return { vehicles: [], profiles: new Map(), categories: new Map(), count: 0, hasError: true };
   }
 
-  const vehicles = (data ?? []) as VehicleSummary[];
+  const vehicles = vehiclesResult.items as AdminVehicleSummary[];
   const driverIds = [...new Set(vehicles.map((vehicle) => vehicle.motorista_id))];
   const vehicleIds = vehicles.map((vehicle) => vehicle.id);
   const [profileRows, categoriesResult] = await Promise.all([
@@ -102,7 +89,7 @@ async function getVehicles(filter: string, query: string, page: number) {
     categories.set(row.veiculo_id, [...(categories.get(row.veiculo_id) ?? []), ...labels]);
   }
 
-  return { vehicles, profiles, categories, count: count ?? 0, hasError: false };
+  return { vehicles, profiles, categories, count: vehiclesResult.total, hasError: false };
 }
 
 export default async function VehiclesPage({

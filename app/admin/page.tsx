@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import { getAdminRegistrationStats } from '@/lib/admin-driver-vehicles';
 import { countAdminProfiles } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import { countAdminRequests, getOperationalAlerts } from '@/lib/admin-operations';
@@ -21,52 +22,30 @@ async function getDashboardStats() {
   const { supabase } = await requireAdmin();
   const [
     totalUsers,
-    { count: totalDrivers },
-    { count: pendingDrivers },
+    registrationStats,
     totalSolicitacoes,
     pendingSolicitacoes,
     activeSolicitacoes,
-    { count: pendingVehicles },
-    { count: totalPagamentos },
-    { count: paidPagamentos },
     operationalAlerts,
   ] = await Promise.all([
     countAdminProfiles(supabase, 'user'),
-    supabase.from('driver_profiles').select('id', { count: 'exact', head: true }),
-    supabase
-      .from('driver_profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('status_motorista', 'pendente'),
+    getAdminRegistrationStats(supabase),
     countAdminRequests(supabase),
     countAdminRequests(supabase, ['pendente']),
     countAdminRequests(supabase, ['confirmada', 'em_andamento']),
-    supabase
-      .from('veiculos')
-      .select('id', { count: 'exact', head: true })
-      .in('status_validacao', [
-        'pendente_upload',
-        'pendente_extracao',
-        'extraido_parcial',
-        'pendente_revisao',
-      ]),
-    supabase.from('pagamentos').select('id', { count: 'exact', head: true }),
-    supabase
-      .from('pagamentos')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'PAID'),
     getOperationalAlerts(supabase),
   ]);
 
   return {
     totalUsers,
-    totalDrivers: totalDrivers ?? 0,
-    pendingDrivers: pendingDrivers ?? 0,
+    totalDrivers: registrationStats.total_motoristas,
+    pendingDrivers: registrationStats.motoristas_pendentes,
     totalSolicitacoes,
     pendingSolicitacoes,
     activeSolicitacoes,
-    pendingVehicles: pendingVehicles ?? 0,
-    totalPagamentos: totalPagamentos ?? 0,
-    paidPagamentos: paidPagamentos ?? 0,
+    pendingVehicles: registrationStats.veiculos_pendentes,
+    totalPagamentos: registrationStats.total_pagamentos,
+    paidPagamentos: registrationStats.pagamentos_pagos,
     alerts: operationalAlerts.data,
     alertsUnavailable: operationalAlerts.error,
   };

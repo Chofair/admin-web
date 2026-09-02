@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/auth';
+import { getAdminDriver } from '@/lib/admin-driver-vehicles';
 import { getAdminProfile } from '@/lib/admin-profiles';
 import { listAdminRequests } from '@/lib/admin-operations';
 import NavBar from '@/components/NavBar';
@@ -50,28 +51,15 @@ export default async function MotoristaDetailPage({
   const { msg } = await searchParams;
   const { supabase } = await requireAdmin();
 
-  const [{ data: motorista }, profile, { data: veiculos }, { data: documentos }, requestsResult] =
-    await Promise.all([
-      supabase
-        .from('driver_profiles')
-        .select('*')
-        .eq('id', id)
-        .single(),
-      getAdminProfile(supabase, id),
-      supabase
-        .from('veiculos')
-        .select('id, placa, marca, modelo, ano, cor, status_validacao')
-        .eq('motorista_id', id)
-        .eq('ativo', true)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('documentos_motorista')
-        .select('*')
-        .eq('motorista_id', id)
-        .order('data_upload', { ascending: false }),
-      listAdminRequests(supabase, { driverId: id, limit: 10 }),
-    ]);
+  const [driverDetail, profile, requestsResult] = await Promise.all([
+    getAdminDriver(supabase, id),
+    getAdminProfile(supabase, id),
+    listAdminRequests(supabase, { driverId: id, limit: 10 }),
+  ]);
   const corridas = requestsResult.items;
+  const motorista = driverDetail?.motorista ?? null;
+  const veiculos = driverDetail?.veiculos ?? [];
+  const documentos = driverDetail?.documentos ?? [];
 
   if (!motorista) {
     return (

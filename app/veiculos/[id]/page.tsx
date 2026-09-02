@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import { getAdminVehicle } from '@/lib/admin-driver-vehicles';
 import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import {
@@ -12,31 +13,6 @@ import {
 import VehicleApprovalForm from './VehicleApprovalForm';
 import VehicleRejectionForm from './VehicleRejectionForm';
 import VehicleReviewForm from './VehicleReviewForm';
-
-type VehicleDetail = {
-  id: string;
-  motorista_id: string;
-  placa: string;
-  renavam: string | null;
-  marca: string | null;
-  modelo: string | null;
-  ano: number | null;
-  cor: string | null;
-  capacidade_passageiros: number | null;
-  ar_condicionado: boolean | null;
-  accessibility_features: Record<string, unknown> | null;
-  crlv_path: string | null;
-  crlv_mime_type: string | null;
-  crlv_uploaded_at: string | null;
-  status_validacao: string;
-  campos_pendentes: string[] | null;
-  dados_extraidos_crlv: Record<string, unknown> | null;
-  validado_por: string | null;
-  validado_em: string | null;
-  motivo_rejeicao: string | null;
-  ativo: boolean;
-  created_at: string;
-};
 
 type ProfileSummary = {
   id: string;
@@ -96,17 +72,8 @@ export default async function VehicleDetailPage({
 }) {
   const { id } = await params;
   const { supabase } = await requireAdmin();
-  const { data, error } = await supabase
-    .from('veiculos')
-    .select(
-      'id, motorista_id, placa, renavam, marca, modelo, ano, cor, capacidade_passageiros, ar_condicionado, accessibility_features, crlv_path, crlv_mime_type, crlv_uploaded_at, status_validacao, campos_pendentes, dados_extraidos_crlv, validado_por, validado_em, motivo_rejeicao, ativo, created_at'
-    )
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error) console.error('Erro ao buscar veículo para revisão:', error);
-  if (!data) notFound();
-  const vehicle = data as VehicleDetail;
+  const vehicle = await getAdminVehicle(supabase, id);
+  if (!vehicle) notFound();
 
   const profileIds = [vehicle.motorista_id, vehicle.validado_por].filter(
     (profileId): profileId is string => Boolean(profileId)
