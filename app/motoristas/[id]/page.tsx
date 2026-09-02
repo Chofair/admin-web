@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/auth';
+import { getAdminProfile } from '@/lib/admin-profiles';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 import { aprovarMotorista, rejeitarMotorista, suspenderMotorista, reativarMotorista } from './actions';
@@ -48,13 +49,14 @@ export default async function MotoristaDetailPage({
   const { msg } = await searchParams;
   const { supabase } = await requireAdmin();
 
-  const [{ data: motorista }, { data: veiculos }, { data: documentos }, { data: corridas }] =
+  const [{ data: motorista }, profile, { data: veiculos }, { data: documentos }, { data: corridas }] =
     await Promise.all([
       supabase
         .from('driver_profiles')
-        .select('*, profiles(name, cpf, telefone, data_nascimento, foto_perfil_url, created_at)')
+        .select('*')
         .eq('id', id)
         .single(),
+      getAdminProfile(supabase, id),
       supabase
         .from('veiculos')
         .select('id, placa, marca, modelo, ano, cor, status_validacao')
@@ -87,15 +89,6 @@ export default async function MotoristaDetailPage({
       </div>
     );
   }
-
-  const profile = motorista.profiles as {
-    name: string | null;
-    cpf: string | null;
-    telefone: string | null;
-    data_nascimento: string | null;
-    foto_perfil_url: string | null;
-    created_at: string | null;
-  } | null;
 
   const statusAtual = motorista.status_motorista ?? 'pendente';
   const totalGanhos = corridas?.reduce((acc, c) => acc + (c.preco_motorista ?? 0), 0) ?? 0;

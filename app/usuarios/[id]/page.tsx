@@ -1,8 +1,9 @@
 import { requireAdmin } from '@/lib/auth';
+import { getAdminProfile } from '@/lib/admin-profiles';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 
-function formatDate(dateStr?: string) {
+function formatDate(dateStr?: string | null) {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('pt-BR');
 }
@@ -36,12 +37,8 @@ export default async function UsuarioDetailPage({
   const { id } = await params;
 
   const { supabase } = await requireAdmin();
-  const [{ data: profile }, { data: solicitacoes }] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', id)
-      .single(),
+  const [profile, { data: solicitacoes }] = await Promise.all([
+    getAdminProfile(supabase, id),
     supabase
       .from('solicitacoes')
       .select('id, tipo_solicitacao, data_servico, horario_inicio, status, preco_total, created_at')

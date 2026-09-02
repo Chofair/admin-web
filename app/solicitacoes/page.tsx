@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import NavBar from '@/components/NavBar';
+import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 
 type RequestListRow = {
@@ -88,9 +89,7 @@ async function getRequests(filter?: string): Promise<RequestListRow[]> {
   const userIds = [
     ...new Set(requests.map((request) => request.usuario_id).filter(Boolean)),
   ];
-  const { data: profiles } = userIds.length
-    ? await supabase.from('profiles').select('id, name').in('id', userIds)
-    : { data: [] as { id: string; name: string | null }[] };
+  const profiles = await getAdminProfilesByIds(supabase, userIds);
   const namesById = new Map(
     (profiles ?? []).map((profile) => [profile.id, profile.name ?? '—']),
   );

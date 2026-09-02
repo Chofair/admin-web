@@ -11,6 +11,7 @@ import {
 import NavBar from '@/components/NavBar';
 import SafeExternalLink from '@/components/SafeExternalLink';
 import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
+import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import {
   getAdminRequestPayments,
@@ -475,13 +476,10 @@ export default async function SolicitacaoDetailPage({
   const profileIds = [request.usuario_id, request.motorista_id].filter(
     (value): value is string => Boolean(value),
   );
-  const { data: profileData } = profileIds.length
-    ? await supabase
-        .from('profiles')
-        .select('id, name, cpf, telefone')
-        .in('id', profileIds)
-    : { data: [] as ProfileSummary[] };
-  const profiles = (profileData ?? []) as ProfileSummary[];
+  const profiles = (await getAdminProfilesByIds(
+    supabase,
+    profileIds,
+  )) as ProfileSummary[];
   const user = profiles.find((profile) => profile.id === request.usuario_id) ?? null;
   const driver =
     profiles.find((profile) => profile.id === request.motorista_id) ?? null;

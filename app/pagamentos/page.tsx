@@ -3,6 +3,7 @@ import { BadgeDollarSign, RefreshCcw, TriangleAlert } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import SafeExternalLink from '@/components/SafeExternalLink';
 import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
+import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import {
   listAdminPayments,
@@ -89,7 +90,7 @@ async function getRepasses(
       pago_em,
       created_at,
       solicitacoes!solicitacao_id(preco_total, preco_final, tipo_solicitacao, data_servico),
-      driver_profiles!motorista_id(chave_pix, profiles(name))
+      driver_profiles!motorista_id(chave_pix)
     `)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -107,7 +108,22 @@ async function getRepasses(
     return [];
   }
 
-  return (data ?? []) as unknown as RepasseRow[];
+  const payouts = (data ?? []) as unknown as RepasseRow[];
+  const profiles = await getAdminProfilesByIds(
+    supabase,
+    payouts.map((payout) => payout.motorista_id),
+  );
+  const namesById = new Map(profiles.map((profile) => [profile.id, profile.name]));
+
+  return payouts.map((payout) => ({
+    ...payout,
+    driver_profiles: payout.driver_profiles
+      ? {
+          ...payout.driver_profiles,
+          profiles: { name: namesById.get(payout.motorista_id) ?? null },
+        }
+      : null,
+  }));
 }
 
 function ReconciliationCell({ payment }: { payment: PaymentRow }) {
