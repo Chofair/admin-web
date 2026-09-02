@@ -169,6 +169,12 @@ export type RequestAdminContext = {
   reembolso_manual: ManualRefundRecord | null;
 };
 
+export type AdminRequestDetail = {
+  request: Record<string, unknown>;
+  addresses: Record<string, unknown>[];
+  payout: Record<string, unknown> | null;
+};
+
 export type OperationalAlerts = {
   revisoes_corridas_abertas: number;
   cancelamentos_abertos: number;
@@ -309,6 +315,34 @@ export async function getAdminRequestPayments(
   }
 
   return { items: Array.isArray(data) ? (data as AdminPaymentItem[]) : [], error: null };
+}
+
+export async function getAdminRequestDetail(
+  supabase: SupabaseServerClient,
+  requestId: string,
+): Promise<AdminRequestDetail | null> {
+  const { data, error } = await supabase.rpc('admin_obter_detalhe_solicitacao', {
+    solicitacao_id_input: requestId,
+  });
+
+  if (error) {
+    console.error('Erro ao carregar detalhe administrativo da solicitacao:', {
+      code: error.code,
+      message: error.message,
+      requestId,
+    });
+    throw new Error('Nao foi possivel carregar o detalhe da solicitacao.');
+  }
+
+  if (!isRecord(data) || !isRecord(data.solicitacao)) return null;
+
+  return {
+    request: data.solicitacao,
+    addresses: Array.isArray(data.enderecos)
+      ? (data.enderecos as Record<string, unknown>[])
+      : [],
+    payout: isRecord(data.repasse) ? data.repasse : null,
+  };
 }
 
 export async function getRequestAdminContext(

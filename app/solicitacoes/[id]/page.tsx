@@ -14,6 +14,7 @@ import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
 import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import {
+  getAdminRequestDetail,
   getAdminRequestPayments,
   getRequestAdminContext,
   type AdminPaymentItem,
@@ -440,39 +441,18 @@ export default async function SolicitacaoDetailPage({
   if (!UUID_PATTERN.test(id)) notFound();
 
   const { supabase } = await requireAdmin();
-  const [
-    { data: requestData, error: requestError },
-    { data: addressData },
-    paymentResult,
-    { data: payoutData },
-    adminContext,
-  ] = await Promise.all([
-    supabase.from('solicitacoes').select('*').eq('id', id).single(),
-    supabase.from('enderecos').select('*').eq('solicitacao_id', id),
+  const [requestDetail, paymentResult, adminContext] = await Promise.all([
+    getAdminRequestDetail(supabase, id),
     getAdminRequestPayments(supabase, id),
-    supabase
-      .from('repasses_motorista')
-      .select('id, valor, status, pago_em, created_at, driver_profiles!motorista_id(chave_pix)')
-      .eq('solicitacao_id', id)
-      .maybeSingle(),
     getRequestAdminContext(supabase, id),
   ]);
 
-  if (requestError || !requestData) {
-    if (requestError) {
-      console.error('Erro ao buscar solicitação:', {
-        code: requestError.code,
-        message: requestError.message,
-        id,
-      });
-    }
-    notFound();
-  }
+  if (!requestDetail) notFound();
 
-  const request = requestData as unknown as RequestRow;
-  const addresses = (addressData ?? []) as unknown as AddressRow[];
+  const request = requestDetail.request as unknown as RequestRow;
+  const addresses = requestDetail.addresses as unknown as AddressRow[];
   const payments = paymentResult.items as PaymentDetail[];
-  const payout = payoutData as unknown as PayoutDetail | null;
+  const payout = requestDetail.payout as unknown as PayoutDetail | null;
   const profileIds = [request.usuario_id, request.motorista_id].filter(
     (value): value is string => Boolean(value),
   );
