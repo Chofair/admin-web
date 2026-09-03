@@ -59,7 +59,7 @@ const sections = [
 		],
 	},
 	{
-		title: '6. Conduta, Comunicação, Proibições e Medidas da Plataforma.',
+		title: '6. Conduta, Comunicação, Proibições e Medidas da Plataforma',
 		items: [
 			'O Cliente deve agir com respeito, boa-fé, prudência e civilidade no contato com o Motorista e no uso da Plataforma.',
 			'Condutas vedadas (tolerância zero): é proibido, durante o serviço ou em contato com o Motorista:',
