@@ -132,7 +132,7 @@ export default function LandingPage() {
 							melhor.
 						</p>
 					</div>
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
 						{[
 							{
 								icon: Shield,
@@ -154,7 +154,7 @@ export default function LandingPage() {
 								title: 'Motoristas avaliados',
 								desc: 'Sistema de avaliações bidirecional que garante qualidade para passageiros e motoristas.',
 							},
-							{
+							/* {
 								icon: MapPin,
 								title: 'Rastreamento em tempo real',
 								desc: 'Acompanhe sua corrida ao vivo e compartilhe sua localização com quem quiser.',
@@ -163,7 +163,7 @@ export default function LandingPage() {
 								icon: Car,
 								title: 'Diversas categorias',
 								desc: 'Do econômico ao executivo, escolha o tipo de veículo que melhor atende à sua necessidade.',
-							},
+							}, */
 						].map((item) => (
 							<div
 								key={item.title}
