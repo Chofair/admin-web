@@ -63,7 +63,9 @@ export default function LandingPage() {
 							<p className="text-3xl font-extrabold text-[#0058A3] mb-1">
 								{stat.value}
 							</p>
-							<p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
+							<p className="text-sm text-slate-500 dark:text-slate-400">
+								{stat.label}
+							</p>
 						</div>
 					))}
 				</div>
@@ -74,7 +76,7 @@ export default function LandingPage() {
 				<div className="max-w-7xl mx-auto">
 					<div className="text-center mb-16">
 						<h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
-							Como funciona
+							Como funciona.
 						</h2>
 						<p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
 							Em apenas dois passos simples você já está em movimento.
@@ -121,7 +123,9 @@ export default function LandingPage() {
 			</section>
 
 			{/* Vantagens */}
-			<section id="vantagens" className="py-24 px-6 bg-slate-100/40 dark:bg-slate-900/40">
+			<section
+				id="vantagens"
+				className="py-24 px-6 bg-slate-100/40 dark:bg-slate-900/40">
 				<div className="max-w-7xl mx-auto">
 					<div className="text-center mb-16">
 						<h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
@@ -225,7 +229,9 @@ export default function LandingPage() {
 			</section>
 
 			{/* Contato */}
-			<section id="contato" className="py-24 px-6 bg-slate-100/40 dark:bg-slate-900/40">
+			<section
+				id="contato"
+				className="py-24 px-6 bg-slate-100/40 dark:bg-slate-900/40">
 				<div className="max-w-7xl mx-auto text-center">
 					<h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
 						Entre em contato
@@ -241,7 +247,9 @@ export default function LandingPage() {
 							<Mail size={20} className="text-[#0058A3]" />
 							<div className="text-left">
 								<p className="text-xs text-slate-500 mb-0.5">Email</p>
-								<p className="font-semibold text-sm">chofairmobilidade@gmail.com</p>
+								<p className="font-semibold text-sm">
+									chofairmobilidade@gmail.com
+								</p>
 							</div>
 						</a>
 						<a
@@ -265,10 +273,14 @@ export default function LandingPage() {
 						© {new Date().getFullYear()} Chofair. Todos os direitos reservados.
 					</p>
 					<div className="flex gap-6 text-sm text-slate-500">
-						<Link href="/termos" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+						<Link
+							href="/termos"
+							className="hover:text-slate-900 dark:hover:text-white transition-colors">
 							Termos de Uso
 						</Link>
-						<Link href="/exclusao-de-conta" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+						<Link
+							href="/exclusao-de-conta"
+							className="hover:text-slate-900 dark:hover:text-white transition-colors">
 							Exclusão de Conta
 						</Link>
 					</div>
