@@ -77,10 +77,10 @@ export default function LandingPage() {
 							Como funciona
 						</h2>
 						<p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
-							Em apenas três passos simples você já está em movimento.
+							Em apenas dois passos simples você já está em movimento.
 						</p>
 					</div>
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
 						{[
 							{
 								step: '01',
@@ -94,12 +94,12 @@ export default function LandingPage() {
 								title: 'Escolha seu motorista',
 								desc: 'Veja motoristas disponíveis próximos a você, com avaliações e tempo estimado de chegada.',
 							},
-							{
+							/* {
 								step: '03',
 								icon: Star,
 								title: 'Viaje e avalie',
 								desc: 'Acompanhe a corrida em tempo real e ao final avalie sua experiência para ajudar a comunidade.',
-							},
+							}, */
 						].map((item) => (
 							<div
 								key={item.step}
@@ -236,21 +236,21 @@ export default function LandingPage() {
 					</p>
 					<div className="flex flex-col sm:flex-row gap-6 justify-center">
 						<a
-							href="mailto:contato@chofair.com"
+							href="mailto:chofairmobilidade@gmail.com"
 							className="inline-flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-[#0058A3]/50 rounded-2xl px-8 py-5 transition-colors">
 							<Mail size={20} className="text-[#0058A3]" />
 							<div className="text-left">
 								<p className="text-xs text-slate-500 mb-0.5">Email</p>
-								<p className="font-semibold text-sm">contato@chofair.com</p>
+								<p className="font-semibold text-sm">chofairmobilidade@gmail.com</p>
 							</div>
 						</a>
 						<a
-							href="tel:+5500000000000"
+							href="tel:+5513996567386"
 							className="inline-flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-[#0058A3]/50 rounded-2xl px-8 py-5 transition-colors">
 							<Phone size={20} className="text-[#0058A3]" />
 							<div className="text-left">
 								<p className="text-xs text-slate-500 mb-0.5">Telefone</p>
-								<p className="font-semibold text-sm">(00) 0000-0000</p>
+								<p className="font-semibold text-sm">(13) 99656-7386</p>
 							</div>
 						</a>
 					</div>
