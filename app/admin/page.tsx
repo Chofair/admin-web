@@ -11,12 +11,14 @@ import {
   ListChecks,
   RefreshCcw,
   Users,
+  Accessibility,
 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import { getAdminRegistrationStats } from '@/lib/admin-driver-vehicles';
 import { countAdminProfiles } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
 import { countAdminRequests, getOperationalAlerts } from '@/lib/admin-operations';
+import { getAccessibilityStats } from '@/lib/admin-accessibility';
 
 async function getDashboardStats() {
   const { supabase } = await requireAdmin();
@@ -27,6 +29,7 @@ async function getDashboardStats() {
     pendingSolicitacoes,
     activeSolicitacoes,
     operationalAlerts,
+    accessibilityStats,
   ] = await Promise.all([
     countAdminProfiles(supabase, 'user'),
     getAdminRegistrationStats(supabase),
@@ -34,6 +37,7 @@ async function getDashboardStats() {
     countAdminRequests(supabase, ['pendente']),
     countAdminRequests(supabase, ['confirmada', 'em_andamento']),
     getOperationalAlerts(supabase),
+    getAccessibilityStats(supabase).catch(() => ({ pending_profiles: 0, pending_vehicles: 0, approved_profiles: 0, approved_vehicles: 0 })),
   ]);
 
   return {
@@ -48,6 +52,7 @@ async function getDashboardStats() {
     paidPagamentos: registrationStats.pagamentos_pagos,
     alerts: operationalAlerts.data,
     alertsUnavailable: operationalAlerts.error,
+    accessibilityStats,
   };
 }
 
@@ -62,6 +67,14 @@ export default async function Dashboard() {
       href: '/veiculos',
       color: stats.pendingVehicles > 0 ? 'bg-orange-500' : 'bg-green-500',
       Icon: CarFront,
+    },
+    {
+      title: 'Acessibilidade',
+      value: stats.accessibilityStats.pending_profiles + stats.accessibilityStats.pending_vehicles,
+      sub: `${stats.accessibilityStats.pending_profiles} perfis · ${stats.accessibilityStats.pending_vehicles} veículos`,
+      href: '/acessibilidade?status=pending',
+      color: stats.accessibilityStats.pending_profiles + stats.accessibilityStats.pending_vehicles > 0 ? 'bg-orange-500' : 'bg-green-500',
+      Icon: Accessibility,
     },
     {
       title: 'Usuários',
@@ -150,7 +163,7 @@ export default async function Dashboard() {
           Visão geral
         </h1>
 
-        <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-6">
           {cards.map((card) => (
             <Link
               key={card.href}

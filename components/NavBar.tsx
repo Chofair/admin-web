@@ -16,6 +16,7 @@ import {
   ListChecks,
   BadgeDollarSign,
   LogOut,
+  Accessibility,
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { logout } from '@/app/auth/actions';
@@ -25,6 +26,7 @@ const links = [
   { href: '/usuarios', label: 'Usuários', Icon: Users },
   { href: '/motoristas', label: 'Motoristas', Icon: Car },
   { href: '/veiculos', label: 'Veículos', Icon: CarFront },
+  { href: '/acessibilidade', label: 'Acessibilidade', Icon: Accessibility },
   { href: '/solicitacoes', label: 'Solicitações', Icon: ClipboardList },
   { href: '/revisoes-corridas', label: 'Revisões', Icon: ListChecks },
   { href: '/cancelamentos-pagamento', label: 'Reembolsos', Icon: BadgeDollarSign },

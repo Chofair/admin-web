@@ -226,6 +226,23 @@ const sections = [
 			'Fica eleito o foro da Comarca de Registro/SP, salvo quando a lei determinar foro diverso de forma obrigatória, inclusive regras aplicáveis de proteção ao consumidor.',
 		],
 	},
+	{
+		title: '17. Serviços de Pagamento e Tratamento de Dados',
+		items: [
+			'Os pagamentos realizados por Pix ou cartão são processados por prestadores de serviços de pagamento contratados pela CHOFAIR, atualmente o Mercado Pago.',
+			'Para viabilizar o pagamento, prevenir fraudes, confirmar transações, realizar estornos e prestar suporte, a CHOFAIR poderá compartilhar com o processador informações estritamente necessárias, como nome, e-mail, CPF, valor da transação e identificadores do serviço.',
+			'A CHOFAIR não armazena o número completo do cartão nem o código de segurança (CVV). Esses dados são tratados e tokenizados no ambiente seguro do processador de pagamentos. Para gerir pagamentos, prevenir fraudes e cumprir obrigações legais, a CHOFAIR poderá armazenar dados financeiros e metadados limitados, como identificadores do processador, bandeira, quatro últimos dígitos, validade, valor e situação da transação.',
+			'A CHOFAIR e o prestador de pagamento são responsáveis pelos tratamentos realizados em seus respectivos ambientes e de acordo com a legislação aplicável.',
+			'O tratamento realizado pelo Mercado Pago também está sujeito à sua Declaração de Privacidade, disponível em https://www.mercadolivre.com.br/privacidade/declaracao-privacidade/current.',
+			'Transações iniciadas anteriormente poderão continuar sendo conciliadas ou tratadas pelo prestador originalmente utilizado, inclusive a AbacatePay.',
+		],
+	},
+	{
+		title: '18. Custos Adicionais da Viagem',
+		items: [
+			'O valor apresentado refere-se ao serviço contratado e não inclui pedágios, balsas e estacionamentos. Quando aplicáveis, essas despesas são de responsabilidade do contratante e devem ser pagas à parte durante a realização do serviço.',
+		],
+	},
 ];
 
 const alpha = 'abcdefghijklmnopqrstuvwxyz';
@@ -265,9 +282,12 @@ export default function TermosPage() {
 						</div>
 						<p className="mt-4 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
 							A CHOFAIR é uma plataforma digital operada por{' '}
-							<strong>[RAZÃO SOCIAL DA EMPRESA]</strong>, inscrita no CNPJ sob
-							nº <strong>[CNPJ]</strong>, com sede em{' '}
-							<strong>[ENDEREÇO COMPLETO]</strong>.
+							<strong>CHOFAIR TECNOLOGIA E MOBILIDADE LTDA</strong>, inscrita
+							no CNPJ sob nº <strong>65.471.912/0001-97</strong>, com sede na{' '}
+							<strong>
+								Rua Maringá, nº 188, Jardim Paraná, Registro/SP, CEP 11900-000,
+								Brasil
+							</strong>.
 						</p>
 					</div>
 
