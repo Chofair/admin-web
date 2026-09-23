@@ -1,3 +1,4 @@
+import { AutomaticRefundPanel, type AutomaticRefund } from './AutomaticRefundPanel';
 import Link from 'next/link';
 import {
   BadgeDollarSign,
@@ -73,6 +74,13 @@ export default async function PaymentCancellationsPage({
     params.cursor && !Number.isNaN(Date.parse(params.cursor)) ? params.cursor : undefined;
   const { supabase } = await requireAdmin();
   const queue = await listPaymentCancellations(supabase, status, cursor);
+  const paymentIds = queue.items.flatMap(item => item.pagamento_id ? [item.pagamento_id] : []);
+  const refunds = paymentIds.length
+    ? await supabase.rpc('admin_obter_reembolsos_automaticos', { pagamentos_input: paymentIds })
+    : { data: [], error: null };
+  const automaticRefunds = new Map<string, AutomaticRefund>(
+    ((refunds.data ?? []) as AutomaticRefund[]).map(item => [item.pagamento_id, item]),
+  );
 
   const filters: Array<{ value: AdminQueueStatus; label: string }> = [
     { value: 'aberta', label: 'Abertos' },
@@ -96,9 +104,7 @@ export default async function PaymentCancellationsPage({
               Cancelamentos e reembolsos
             </h1>
             <p className="mt-1 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
-              Acompanhe cancelamentos sem cobrança, concilie pagamentos e registre
-              reembolsos já executados manualmente. Nenhuma ação desta página solicita
-              uma devolução ao Mercado Pago.
+              Acompanhe reembolsos automáticos, trate falhas e registre devoluções manuais dos demais casos.
             </p>
           </div>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -122,6 +128,7 @@ export default async function PaymentCancellationsPage({
           ))}
         </div>
 
+        {refunds.error && <p role="alert" className="mb-4 rounded border border-red-300 p-4">Não foi possível consultar os reembolsos automáticos. Atualize a página. Os registros manuais estão temporariamente bloqueados.</p>}
         {queue.error && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
             {queue.error} Confirme se as migrations mais recentes foram aplicadas.
@@ -134,7 +141,8 @@ export default async function PaymentCancellationsPage({
               cancellation.snapshot_financeiro,
               'pagamento_status',
             );
-            const canRegisterManualRefund =
+            const automaticRefund = cancellation.pagamento_id ? automaticRefunds.get(cancellation.pagamento_id) : undefined;
+            const canRegisterManualRefund = !refunds.error && !automaticRefund &&
               cancellation.status === 'aberta' &&
               cancellation.tratamento_financeiro === 'reembolso' &&
               cancellation.pagamento_status_atual === 'PAID' &&
@@ -274,6 +282,7 @@ export default async function PaymentCancellationsPage({
                     </div>
                   )}
 
+                {automaticRefund && <AutomaticRefundPanel refund={automaticRefund} />}
                 {canRegisterManualRefund && (
                   <ManualRefundForm
                     cancellationId={cancellation.id}
