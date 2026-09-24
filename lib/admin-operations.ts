@@ -103,7 +103,7 @@ export type PaymentCancellationItem = {
   motivo: string;
   criada_em: string;
   resolvida_em: string | null;
-  resultado: 'cobranca_cancelada' | 'cobranca_expirada' | 'reembolsado' | null;
+  resultado: 'cobranca_cancelada' | 'cobranca_expirada' | 'reembolsado' | 'reembolso_negado' | null;
   snapshot_financeiro: Record<string, unknown>;
   pagamento_status_atual: string | null;
   valor_centavos: number | null;

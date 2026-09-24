@@ -29,6 +29,7 @@ const links = [
   { href: '/acessibilidade', label: 'Acessibilidade', Icon: Accessibility },
   { href: '/solicitacoes', label: 'Solicitações', Icon: ClipboardList },
   { href: '/revisoes-corridas', label: 'Revisões', Icon: ListChecks },
+  { href: '/cancelamentos', label: 'Cancelamentos', Icon: BadgeDollarSign },
   { href: '/cancelamentos-pagamento', label: 'Reembolsos', Icon: BadgeDollarSign },
   { href: '/pagamentos', label: 'Pagamentos', Icon: CreditCard },
   { href: '/google-maps', label: 'Google Maps', Icon: MapPinned },
@@ -49,7 +50,7 @@ export default function NavBar() {
         <div className="flex min-w-0 items-center gap-2">
           <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-1 text-sm font-medium lg:pb-0">
             {links.map(({ href, label, Icon }) => {
-              const isActive = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+              const isActive = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <Link
                   key={href}
