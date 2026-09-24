@@ -123,6 +123,7 @@ export async function registerManualRefund(
   }
 
   revalidatePath('/cancelamentos-pagamento');
+  revalidatePath('/cancelamentos');
   revalidatePath(`/solicitacoes/${requestId}`);
   revalidatePath('/pagamentos');
   revalidatePath('/admin');
@@ -170,6 +171,7 @@ export async function reopenPaymentReconciliation(
   }
 
   revalidatePath('/cancelamentos-pagamento');
+  revalidatePath('/cancelamentos');
   revalidatePath('/pagamentos');
   revalidatePath('/admin');
 
@@ -191,6 +193,7 @@ export async function retryAutomaticRefund(
     { reembolso_id_input: id, motivo_input: reason });
   if (error) return { status: 'error', message: 'Não foi possível reprocessar. Atualize a página e confira se o reembolso ainda está em falha.' };
   revalidatePath('/cancelamentos-pagamento');
+  revalidatePath('/cancelamentos');
   revalidatePath('/admin');
   return { status: 'success', message: 'Nova tentativa agendada. Acompanhe a confirmação nesta fila.' };
 }

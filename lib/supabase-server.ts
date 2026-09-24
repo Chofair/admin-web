@@ -12,9 +12,19 @@ export async function createSupabaseServerClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch (error) {
+            // Server Components have read-only cookies. The proxy persists
+            // refreshed sessions before rendering; Server Actions still write here.
+            if (!(error instanceof Error) || !error.message.startsWith(
+              'Cookies can only be modified in a Server Action or Route Handler.'
+            )) {
+              throw error;
+            }
+          }
         },
       },
     }

@@ -22,6 +22,7 @@ const protectedRoutes = [
   '/solicitacoes',
   '/revisoes-corridas',
   '/cancelamentos-pagamento',
+  '/cancelamentos',
   '/pagamentos',
   '/google-maps',
 ] as const;
@@ -210,6 +211,7 @@ export const config = {
     '/solicitacoes/:path*',
     '/revisoes-corridas/:path*',
     '/cancelamentos-pagamento/:path*',
+    '/cancelamentos/:path*',
     '/pagamentos/:path*',
     '/google-maps/:path*',
   ],

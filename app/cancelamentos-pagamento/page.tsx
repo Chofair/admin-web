@@ -1,3 +1,5 @@
+import { financialQueuePresentation } from '@/lib/cancellation-presentation';
+import { RefreshButton } from '../cancelamentos/RefreshButton';
 import { AutomaticRefundPanel, type AutomaticRefund } from './AutomaticRefundPanel';
 import Link from 'next/link';
 import {
@@ -34,6 +36,9 @@ function getSnapshotText(snapshot: Record<string, unknown>, key: string) {
   return typeof value === 'string' || typeof value === 'number' ? String(value) : null;
 }
 
+function paymentLabel(status?: string | null) {
+  return ({ PAID: 'Confirmado', PENDING: 'Aguardando pagamento', REFUNDED: 'Reembolsado', EXPIRED: 'Expirado', CANCELLED: 'Cancelado' } as Record<string,string>)[status ?? ''] ?? status ?? 'Sem pagamento';
+}
 function getPaymentStatusStyle(status?: string | null) {
   switch (status) {
     case 'PAID':
@@ -74,6 +79,8 @@ export default async function PaymentCancellationsPage({
     params.cursor && !Number.isNaN(Date.parse(params.cursor)) ? params.cursor : undefined;
   const { supabase } = await requireAdmin();
   const queue = await listPaymentCancellations(supabase, status, cursor);
+  const v2Cases = await supabase.rpc('admin_obter_cancelamentos_v2', { solicitacoes_input: queue.items.map(item => item.solicitacao_id) });
+  const v2Ids = new Set<string>((v2Cases.data ?? []) as string[]);
   const paymentIds = queue.items.flatMap(item => item.pagamento_id ? [item.pagamento_id] : []);
   const refunds = paymentIds.length
     ? await supabase.rpc('admin_obter_reembolsos_automaticos', { pagamentos_input: paymentIds })
@@ -101,10 +108,10 @@ export default async function PaymentCancellationsPage({
               </span>
             </div>
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              Cancelamentos e reembolsos
+              Fila de reembolsos
             </h1>
             <p className="mt-1 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
-              Acompanhe reembolsos automáticos, trate falhas e registre devoluções manuais dos demais casos.
+              Acompanhe devoluções e cobranças em conciliação. As decisões ficam na tela de Cancelamentos.
             </p>
           </div>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -112,7 +119,8 @@ export default async function PaymentCancellationsPage({
           </p>
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <RefreshButton />
           {filters.map((filter) => (
             <Link
               key={filter.value}
@@ -128,7 +136,7 @@ export default async function PaymentCancellationsPage({
           ))}
         </div>
 
-        {refunds.error && <p role="alert" className="mb-4 rounded border border-red-300 p-4">Não foi possível consultar os reembolsos automáticos. Atualize a página. Os registros manuais estão temporariamente bloqueados.</p>}
+        {(refunds.error || v2Cases.error) && <p role="alert" className="mb-4 rounded border border-red-300 p-4">Não foi possível consultar os reembolsos automáticos. Atualize a página. Os registros manuais estão temporariamente bloqueados.</p>}
         {queue.error && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
             {queue.error} Confirme se as migrations mais recentes foram aplicadas.
@@ -142,7 +150,9 @@ export default async function PaymentCancellationsPage({
               'pagamento_status',
             );
             const automaticRefund = cancellation.pagamento_id ? automaticRefunds.get(cancellation.pagamento_id) : undefined;
-            const canRegisterManualRefund = !refunds.error && !automaticRefund &&
+            const isV2 = v2Ids.has(cancellation.solicitacao_id);
+            const presentation = financialQueuePresentation(cancellation, isV2);
+            const canRegisterManualRefund = !v2Cases.error && !isV2 && !refunds.error && !automaticRefund &&
               cancellation.status === 'aberta' &&
               cancellation.tratamento_financeiro === 'reembolso' &&
               cancellation.pagamento_status_atual === 'PAID' &&
@@ -175,7 +185,7 @@ export default async function PaymentCancellationsPage({
                         ) : (
                           <CheckCircle2 size={13} />
                         )}
-                        {cancellation.status === 'aberta' ? 'Aguardando tratamento' : 'Resolvido'}
+                        {presentation.title}
                       </span>
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -184,9 +194,7 @@ export default async function PaymentCancellationsPage({
                             : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                         }`}
                       >
-                        {cancellation.tratamento_financeiro === 'reembolso'
-                          ? 'Reembolso'
-                          : 'Acompanhar cobrança'}
+                        {presentation.unpaid ? 'Sem pagamento' : cancellation.tratamento_financeiro === 'reembolso' ? 'Reembolso' : 'Acompanhar cobrança'}
                       </span>
                     </div>
                     <h2 className="mt-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
@@ -216,17 +224,17 @@ export default async function PaymentCancellationsPage({
                         cancellation.pagamento_status_atual,
                       )}`}
                     >
-                      {cancellation.pagamento_status_atual ?? '—'}
+                      {paymentLabel(cancellation.pagamento_status_atual)}
                     </span>
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500">Status no cancelamento</p>
                     <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">
-                      {snapshotStatus ?? '—'}
+                      {snapshotStatus ? paymentLabel(snapshotStatus) : 'Sem confirmação'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500">Valor</p>
+                    <p className="text-xs text-zinc-500">{presentation.unpaid ? 'Valor previsto (não pago)' : 'Valor do pagamento'}</p>
                     <p className="mt-1 font-semibold text-zinc-900 dark:text-zinc-100">
                       {formatCents(cancellation.valor_centavos)}
                     </p>
@@ -254,6 +262,8 @@ export default async function PaymentCancellationsPage({
                   </div>
                 </div>
 
+                {presentation.unpaid && <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">Cancelamento encerrado sem pagamento confirmado. Nenhum reembolso foi necessário. O registro permanece no histórico.</p>}
+                {isV2 && <Link href={'/cancelamentos?id=' + cancellation.solicitacao_id} className="mt-4 block rounded border border-blue-400 p-4 font-semibold text-blue-700 dark:text-blue-300">{presentation.link}</Link>}
                 {canRetryReconciliation && cancellation.pagamento_id && (
                   <RetryReconciliationForm paymentId={cancellation.pagamento_id} />
                 )}
@@ -272,11 +282,11 @@ export default async function PaymentCancellationsPage({
 
                 {cancellation.status === 'aberta' &&
                   cancellation.tratamento_financeiro === 'reembolso' &&
-                  !canRegisterManualRefund && (
+                  !canRegisterManualRefund && !isV2 && (
                     <div className="mt-4 flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
                       <CircleAlert className="mt-0.5 shrink-0" size={17} />
                       <p>
-                        O registro manual só é liberado enquanto o pagamento estiver PAID.
+                        O registro manual só é liberado quando o pagamento estiver confirmado.
                         Atualize a fila após a conciliação antes de prosseguir.
                       </p>
                     </div>
@@ -339,7 +349,7 @@ export default async function PaymentCancellationsPage({
 
                 {cancellation.status === 'resolvida' && !cancellation.reembolso_manual && (
                   <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-                    Resultado: {cancellation.resultado?.replaceAll('_', ' ') ?? '—'} ·{' '}
+                    Resultado: {cancellation.resultado === 'reembolso_negado' ? 'Reembolso não aprovado' : cancellation.resultado?.replaceAll('_', ' ') ?? '—'} ·{' '}
                     {formatDateTime(cancellation.resolvida_em)}
                   </p>
                 )}
