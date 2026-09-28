@@ -76,7 +76,7 @@ export default function LandingPage() {
 				<div className="max-w-7xl mx-auto">
 					<div className="text-center mb-16">
 						<h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
-							Como funciona.
+							Como funciona?
 						</h2>
 						<p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
 							Em apenas dois passos simples você já está em movimento.
