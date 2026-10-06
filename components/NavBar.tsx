@@ -16,6 +16,7 @@ import {
   ListChecks,
   BadgeDollarSign,
   LogOut,
+  HandCoins,
   Accessibility,
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
@@ -32,6 +33,7 @@ const links = [
   { href: '/cancelamentos', label: 'Cancelamentos', Icon: BadgeDollarSign },
   { href: '/cancelamentos-pagamento', label: 'Reembolsos', Icon: BadgeDollarSign },
   { href: '/pagamentos', label: 'Pagamentos', Icon: CreditCard },
+  { href: '/repasses', label: 'Repasses', Icon: HandCoins },
   { href: '/google-maps', label: 'Google Maps', Icon: MapPinned },
   { href: '/aplicativo', label: 'Aplicativo', Icon: Smartphone },
 ];

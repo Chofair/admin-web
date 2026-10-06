@@ -27,7 +27,8 @@ async function updatePayout(payoutId: string, action: 'confirmar' | 'reverter') 
     throw new Error('Não foi possível atualizar o repasse.');
   }
 
-  revalidatePath('/pagamentos');
+  revalidatePath('/repasses');
+  revalidatePath('/solicitacoes/[id]', 'page');
   revalidatePath('/admin');
 }
 
