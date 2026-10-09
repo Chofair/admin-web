@@ -63,12 +63,13 @@ function proxyModule(user) {
     } }) },
   });
 }
-test('proxy matches cancellations, nested paths and the existing financial queue', () => {
+test('proxy matches cancellations, payouts, nested paths and the existing financial queue', () => {
   const { config } = proxyModule(null);
-  for (const url of ['/cancelamentos', '/cancelamentos?id=test', '/cancelamentos/test', '/cancelamentos-pagamento']) {
+  for (const url of ['/cancelamentos', '/cancelamentos?id=test', '/cancelamentos/test', '/cancelamentos-pagamento', '/repasses', '/repasses?filter=pendente', '/repasses/test']) {
     assert.equal(unstable_doesMiddlewareMatch({ config, url }), true, url);
   }
   assert.equal(unstable_doesMiddlewareMatch({ config, url: '/cancelamentos-publicos' }), false);
+  assert.equal(unstable_doesMiddlewareMatch({ config, url: '/repasses-publicos' }), false);
 });
 test('cancellations redirects unauthenticated visitors to login', async () => {
   const { proxy } = proxyModule(null);
@@ -79,6 +80,24 @@ test('cancellations redirects unauthenticated visitors to login', async () => {
 test('cancellations refreshes cookies before rendering and persists them in the response', async () => {
   const { proxy } = proxyModule({ id: 'test-user' });
   const request = new NextRequest('https://admin.example/cancelamentos');
+  const response = await proxy(request);
+  assert.equal(request.cookies.get(cookie.name)?.value, cookie.value);
+  assert.equal(response.cookies.get(cookie.name)?.value, cookie.value);
+  assert.equal(response.headers.get('x-middleware-request-cookie'), `${cookie.name}=${cookie.value}`);
+  assert.equal(response.headers.get('cache-control'), 'private, no-store');
+  assert.equal(response.headers.get('x-middleware-next'), '1');
+});
+
+test('payouts redirects unauthenticated visitors to login', async () => {
+  const { proxy } = proxyModule(null);
+  const response = await proxy(new NextRequest('https://admin.example/repasses?filter=pendente'));
+  assert.equal(response.status, 307);
+  assert.equal(response.headers.get('location'), 'https://admin.example/login');
+});
+
+test('payouts refreshes cookies before rendering and persists them in the response', async () => {
+  const { proxy } = proxyModule({ id: 'test-user' });
+  const request = new NextRequest('https://admin.example/repasses');
   const response = await proxy(request);
   assert.equal(request.cookies.get(cookie.name)?.value, cookie.value);
   assert.equal(response.cookies.get(cookie.name)?.value, cookie.value);
