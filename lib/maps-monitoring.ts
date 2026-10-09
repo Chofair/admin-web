@@ -84,6 +84,7 @@ export type MapsApiAlert = {
 };
 
 export type MapsDashboardData = {
+  projectEnvironment: 'staging' | 'production';
   configs: MapsMonitoringConfig[];
   monthlyUsage: MapsMonthlyUsage[];
   operationUsage: MapsOperationUsage[];
@@ -152,6 +153,12 @@ export async function getMapsMonitoringDashboard(
   monthStart: string,
   nextMonthStart: string,
 ): Promise<MapsDashboardData> {
+  const mapsEnvironment = process.env.VERCEL
+    ? 'production'
+    : process.env.MAPS_MONITORING_ENVIRONMENT || 'production';
+  if (!['development', 'preview', 'production'].includes(mapsEnvironment)) {
+    throw new Error('Ambiente de monitoramento Google Maps inválido.');
+  }
   const [
     configResult,
     monthlyResult,
@@ -171,13 +178,13 @@ export async function getMapsMonitoringDashboard(
         'reference_month, environment, config_key, service, sku_name, free_monthly_limit, successful_requests, failed_requests, estimated_billable_events, total_latency_ms, average_latency_ms, free_events_remaining, usage_percentage, highest_threshold_reached, updated_at',
       )
       .eq('reference_month', monthStart)
-      .eq('environment', 'production'),
+      .eq('environment', mapsEnvironment),
     supabase
       .from('maps_api_usage_daily')
       .select(
         'config_key, operation, successful_requests, failed_requests, estimated_billable_events, total_latency_ms, updated_at',
       )
-      .eq('environment', 'production')
+      .eq('environment', mapsEnvironment)
       .gte('usage_date', monthStart)
       .lt('usage_date', nextMonthStart)
       .order('config_key')
@@ -203,7 +210,7 @@ export async function getMapsMonitoringDashboard(
         'id, reference_month, environment, config_key, threshold_percentage, usage_count, created_at, acknowledged_at, acknowledged_by',
       )
       .eq('reference_month', monthStart)
-      .eq('environment', 'production')
+      .eq('environment', mapsEnvironment)
       .order('created_at', { ascending: false }),
   ]);
 
@@ -246,6 +253,10 @@ export async function getMapsMonitoringDashboard(
   );
 
   return {
+    projectEnvironment:
+      !process.env.VERCEL && process.env.ADMIN_ENVIRONMENT === 'staging'
+        ? 'staging'
+        : 'production',
     configs: (configResult.data ?? []) as unknown as MapsMonitoringConfig[],
     monthlyUsage: (monthlyResult.data ?? []) as unknown as MapsMonthlyUsage[],
     operationUsage: (operationResult.data ?? []) as unknown as MapsOperationUsage[],
