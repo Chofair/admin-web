@@ -8,6 +8,7 @@ import {
   ReceiptText,
   Route,
 } from 'lucide-react';
+import PayoutActionForm from '@/app/repasses/PayoutActionForm';
 import NavBar from '@/components/NavBar';
 import SafeExternalLink from '@/components/SafeExternalLink';
 import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
@@ -23,6 +24,10 @@ import {
   type RequestAdminContext,
   type RideReviewContext,
 } from '@/lib/admin-operations';
+import {
+  CHOFAIR_ESTIMATED_TAX_RATE,
+  requestFinancialSplit,
+} from '@/lib/request-financials';
 
 type RequestRow = {
   id: string;
@@ -464,6 +469,7 @@ export default async function SolicitacaoDetailPage({
   const driver =
     profiles.find((profile) => profile.id === request.motorista_id) ?? null;
   const timeline = buildTimeline(request, payments, adminContext);
+  const financialSplit = requestFinancialSplit(request);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -595,20 +601,23 @@ export default async function SolicitacaoDetailPage({
                   )}
                 </dd>
               </div>
-              {request.preco_chofair_bruto != null && (
+              {financialSplit && (
                 <>
                   <div className="flex justify-between gap-4">
                     <dt className="text-zinc-500">Chofair bruto</dt>
-                    <dd>{formatCurrency(request.preco_chofair_bruto)}</dd>
+                    <dd>{formatCurrency(financialSplit.chofairGross)}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <dt className="text-zinc-500">Imposto estimado</dt>
-                    <dd>{formatCurrency(request.preco_chofair_imposto)}</dd>
+                    <dt className="text-zinc-500">
+                      Imposto estimado (
+                      {(CHOFAIR_ESTIMATED_TAX_RATE * 100).toLocaleString('pt-BR')}%)
+                    </dt>
+                    <dd>{formatCurrency(financialSplit.chofairTax)}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
                     <dt className="text-zinc-500">Chofair líquido</dt>
                     <dd className="font-semibold text-blue-700 dark:text-blue-400">
-                      {formatCurrency(request.preco_chofair_liquido)}
+                      {formatCurrency(financialSplit.chofairNet)}
                     </dd>
                   </div>
                 </>
@@ -777,10 +786,13 @@ export default async function SolicitacaoDetailPage({
 
         {payout && (
           <section className="mb-6 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
-            <h2 className="mb-4 flex items-center gap-2 font-semibold text-zinc-800 dark:text-zinc-200">
-              <BadgeDollarSign size={18} />
-              Repasse ao motorista
-            </h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="flex items-center gap-2 font-semibold text-zinc-800 dark:text-zinc-200">
+                <BadgeDollarSign size={18} />
+                Repasse ao motorista
+              </h2>
+              <PayoutActionForm payoutId={payout.id} status={payout.status} />
+            </div>
             <dl className="grid gap-4 text-sm sm:grid-cols-4">
               <div>
                 <dt className="text-zinc-500">Status</dt>
