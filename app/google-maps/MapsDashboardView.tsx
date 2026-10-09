@@ -162,7 +162,10 @@ export function MapsDashboardView({
             Consumo de {formatMonth(monthStart)}
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Ambiente de produção · estimativas internas do Supabase
+            {dashboard.projectEnvironment === 'staging'
+              ? 'Ambiente de staging'
+              : 'Ambiente de produção'}{' '}
+            · estimativas internas do Supabase
           </p>
         </div>
         {pendingAlerts > 0 && (
