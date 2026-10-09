@@ -60,7 +60,7 @@ export default async function Cancellations({ searchParams }: { searchParams: Pr
                 : c.valor_reembolso_centavos > 0 ? <><p className="mt-3 text-2xl font-bold">{money(c.valor_devolvido_centavos)} <span className="text-sm font-normal text-zinc-600 dark:text-zinc-400">de {money(c.valor_reembolso_centavos)}</span></p><p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Devolvido / total recebido vinculado à corrida</p></>
                 : <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Nenhum pagamento confirmado até o momento. A cobrança continua sendo verificada antes de qualquer devolução.</p>}
               {c.cobranca_em_acompanhamento && <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">Há cobrança em conciliação. Uma confirmação tardia será tratada conforme a decisão do reembolso.</p>}
-              {c.reembolso_decisao === 'pendente' && <DecisionForm id={c.solicitacao_id} topic="reembolso" />}
+              {c.reembolso_decisao === 'pendente' && <DecisionForm key={c.solicitacao_id + ":reembolso"} id={c.solicitacao_id} topic="reembolso" />}
             </section>
             <section className={section}><h3 className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">Repasse ao motorista</h3><p className="mt-2 text-lg font-bold">{view.payout}</p>
               {c.repasse_valor_centavos !== null && <p className="mt-3 text-2xl font-bold">{money(c.repasse_valor_centavos)}</p>}
@@ -68,8 +68,8 @@ export default async function Cancellations({ searchParams }: { searchParams: Pr
                 : paidOut ? <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">Transferência registrada. Referência: <span className="break-all font-mono">{c.transferencia_id}</span></p>
                 : <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Inclui o valor contratado e adicionais realizados, mesmo que o cliente ainda não tenha pago. A Chofair assume essa diferença.</p>}
               {c.repasse_composicao && <dl className="mt-4 space-y-2 border-t border-zinc-200 pt-3 text-sm dark:border-zinc-700">{[['Contratado',Math.round(c.repasse_composicao.contratado*100)],['Percursos adicionais',Math.round(c.repasse_composicao.adicionais*100)],['Excedentes',c.repasse_composicao.total-Math.round((c.repasse_composicao.contratado+c.repasse_composicao.adicionais)*100)]].map(([label,value]) => <div key={label} className="flex justify-between gap-3"><dt>{label}</dt><dd>{money(Number(value))}</dd></div>)}</dl>}
-              {c.repasse === 'pendente' && <DecisionForm id={c.solicitacao_id} topic="repasse" canApprove={['cancelada','finalizada','concluida'].includes(c.status_operacional)} />}
-              {c.repasse === 'aprovado' && <DecisionForm id={c.solicitacao_id} topic="transferencia" />}
+              {c.repasse === 'pendente' && <DecisionForm key={c.solicitacao_id + ":repasse"} id={c.solicitacao_id} topic="repasse" canApprove={['cancelada','finalizada','concluida'].includes(c.status_operacional)} />}
+              {c.repasse === 'aprovado' && <DecisionForm key={c.solicitacao_id + ":transferencia"} id={c.solicitacao_id} topic="transferencia" />}
             </section>
           </div>
           {c.reembolsos.length > 0 && <section aria-label="Processamento das devoluções" className="space-y-3"><h3 className="font-semibold">Devoluções por pagamento</h3>{c.reembolsos.map(r => <div key={r.id} className={`rounded-xl border p-4 ${r.status === 'reembolsado' ? 'border-emerald-200 dark:border-emerald-900' : 'border-amber-200 dark:border-amber-900'}`}>

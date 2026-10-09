@@ -1,14 +1,28 @@
 ﻿'use client';
 import { useActionState } from 'react';
-import { decideCancellation } from './actions';
+import { unstable_rethrow } from 'next/navigation';
+import { decideCancellation, type DecisionState } from './actions';
+
+async function submitDecision(previous: DecisionState, form: FormData): Promise<DecisionState> {
+  try {
+    return await decideCancellation(previous, form);
+  } catch (error) {
+    unstable_rethrow(error);
+    return {
+      ok: false,
+      needsRefresh: true,
+      message: 'Não foi possível confirmar a resposta do servidor. A decisão pode ter sido registrada. Atualize a página para conferir antes de tentar novamente.',
+    };
+  }
+}
 export function DecisionForm({ id, topic, canApprove = true }: {
   id: string; topic: 'reembolso' | 'repasse' | 'transferencia'; canApprove?: boolean;
 }) {
-  const [state, action, pending] = useActionState(decideCancellation, { message: '', ok: false });
+  const [state, action, pending] = useActionState(submitDecision, { message: '', ok: false });
   const transfer = topic === 'transferencia';
   return <form action={action} className="mt-5 border-t border-zinc-200 pt-4 dark:border-zinc-700">
     <input type="hidden" name="id" value={id} /><input type="hidden" name="tema" value={topic} />
-    <fieldset disabled={pending || state.ok} className="space-y-4 disabled:opacity-60">
+    <fieldset disabled={pending || state.ok || state.needsRefresh} className="space-y-4 disabled:opacity-60">
       <legend className="mb-3 text-sm font-semibold">{transfer ? 'Registrar transferência realizada' : `Decidir ${topic}`}</legend>
       {!transfer && <label className="grid gap-2 text-sm font-medium">Decisão
         <select name="decisao" required defaultValue="" className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white p-3 text-zinc-900 focus:outline-blue-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100">
@@ -26,6 +40,10 @@ export function DecisionForm({ id, topic, canApprove = true }: {
         {pending ? 'Registrando…' : transfer ? 'Registrar transferência' : `Confirmar decisão de ${topic}`}
       </button>
     </fieldset>
+    {state.needsRefresh && <button type="button" onClick={() => window.location.reload()}
+      className="mt-3 min-h-11 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+      Atualizar página
+    </button>}
     {state.message && <p role={state.ok ? 'status' : 'alert'} className={`mt-3 rounded-lg p-3 text-sm ${state.ok ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200'}`}>{state.message}</p>}
   </form>;
 }

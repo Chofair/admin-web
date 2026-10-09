@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth';
 export type DecisionState = {
     message: string;
     ok: boolean;
+    needsRefresh?: boolean;
 };
 export async function decideCancellation(_previous: DecisionState, form: FormData): Promise<DecisionState> {
     const { supabase } = await requireAdmin();
