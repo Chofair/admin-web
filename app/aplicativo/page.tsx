@@ -68,7 +68,7 @@ export default function AplicativoPage() {
 									<p className="text-[10px] font-normal opacity-60 leading-none mb-0.5 uppercase tracking-wide">
 										Disponível no
 									</p>
-									<p className="text-sm font-bold leading-none">Google Play.</p>
+									<p className="text-sm font-bold leading-none">Google Play</p>
 								</div>
 							</a>
 						</div>
