@@ -68,13 +68,13 @@ export default function AplicativoPage() {
 									<p className="text-[10px] font-normal opacity-60 leading-none mb-0.5 uppercase tracking-wide">
 										Disponível no
 									</p>
-									<p className="text-sm font-bold leading-none">Google Play</p>
+									<p className="text-sm font-bold leading-none">Google Play.</p>
 								</div>
 							</a>
 						</div>
 
 						<div className="mt-10 flex items-center gap-6">
-							<div className="text-center">
+							{/* <div className="text-center">
 								<p className="text-2xl font-extrabold text-[#0058A3]">4.9★</p>
 								<p className="text-xs text-slate-500 dark:text-slate-400">
 									Avaliação
@@ -86,7 +86,7 @@ export default function AplicativoPage() {
 								<p className="text-xs text-slate-500 dark:text-slate-400">
 									Downloads
 								</p>
-							</div>
+							</div> */}
 							<div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
 							<div className="text-center">
 								<p className="text-2xl font-extrabold text-[#0058A3]">24/7</p>
