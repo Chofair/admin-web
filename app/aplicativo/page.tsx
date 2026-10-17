@@ -3,7 +3,8 @@ import LandingHeader from '@/components/LandingHeader';
 
 const APP_STORE_URL =
 	'https://apps.apple.com/br/app/chofair/id6788883015?l=en-GB';
-const PLAY_STORE_URL = '';
+const PLAY_STORE_URL =
+	'https://play.google.com/store/apps/details?id=com.chofair';
 
 export default function AplicativoPage() {
 	return (
