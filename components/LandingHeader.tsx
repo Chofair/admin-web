@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { LogIn } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export default function LandingHeader() {
@@ -35,14 +34,6 @@ export default function LandingHeader() {
 							Aplicativo
 						</a>
 					</nav>
-					<Link
-						href="/login"
-						className="inline-flex items-center gap-2 rounded-full bg-[#0058A3] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0069C0]"
-					>
-						<LogIn size={16} />
-						<span className="hidden sm:inline">Painel Admin</span>
-						<span className="sm:hidden">Admin</span>
-					</Link>
 					<ThemeToggle />
 				</div>
 			</div>
