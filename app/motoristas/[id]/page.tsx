@@ -19,6 +19,23 @@ function formatCPF(cpf?: string | null) {
   return `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}`;
 }
 
+function formatCEP(cep?: string | null) {
+  if (!cep) return '—';
+  const c = cep.replace(/\D/g, '');
+  if (c.length !== 8) return cep;
+  return `${c.slice(0, 5)}-${c.slice(5)}`;
+}
+
+function formatLogradouro(
+  logradouro?: string | null,
+  numero?: string | null,
+  complemento?: string | null,
+) {
+  const base = [logradouro, numero].filter(Boolean).join(', ');
+  if (!base) return '—';
+  return complemento ? `${base} — ${complemento}` : base;
+}
+
 function formatCurrency(val?: number | null) {
   if (val == null) return '—';
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -74,6 +91,8 @@ export default async function MotoristaDetailPage({
       </div>
     );
   }
+
+  const cidadeEstado = [profile?.cidade, profile?.estado].filter(Boolean).join(' / ') || '—';
 
   const statusAtual = motorista.status_motorista ?? 'pendente';
   const totalGanhos = corridas?.reduce((acc, c) => acc + (c.preco_motorista ?? 0), 0) ?? 0;
@@ -207,6 +226,24 @@ export default async function MotoristaDetailPage({
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">Nascimento</p>
               <p className="text-zinc-900">{formatDate(profile?.data_nascimento)}</p>
+            </div>
+            <div>
+              <p className="text-zinc-500 font-medium mb-0.5">Cidade / UF</p>
+              <p className="font-semibold text-zinc-900">{cidadeEstado}</p>
+            </div>
+            <div>
+              <p className="text-zinc-500 font-medium mb-0.5">Bairro</p>
+              <p className="text-zinc-900">{profile?.bairro ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-zinc-500 font-medium mb-0.5">Logradouro</p>
+              <p className="text-zinc-900">
+                {formatLogradouro(profile?.logradouro, profile?.numero, profile?.complemento)}
+              </p>
+            </div>
+            <div>
+              <p className="text-zinc-500 font-medium mb-0.5">CEP</p>
+              <p className="font-mono text-zinc-900">{formatCEP(profile?.cep)}</p>
             </div>
             <div>
               <p className="text-zinc-500 font-medium mb-0.5">CNH Número</p>
