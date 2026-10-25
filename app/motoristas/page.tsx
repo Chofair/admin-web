@@ -14,6 +14,8 @@ type MotoristaSummary = AdminDriverSummary & {
     name: string | null;
     cpf: string | null;
     telefone: string | null;
+    cidade: string | null;
+    estado: string | null;
   } | null;
 };
 
@@ -134,6 +136,7 @@ export default async function MotoristasPage({
               <tr className="border-b border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
                 <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Nome</th>
                 <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">CPF</th>
+                <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Cidade / UF</th>
                 <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">CNH</th>
                 <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Status</th>
                 <th className="text-left px-4 py-3 font-semibold text-zinc-600 dark:text-zinc-300">Cadastro</th>
@@ -143,7 +146,7 @@ export default async function MotoristasPage({
             <tbody>
               {motoristas.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-zinc-400 dark:text-zinc-500">
+                  <td colSpan={7} className="px-4 py-10 text-center text-zinc-400 dark:text-zinc-500">
                     Nenhum motorista encontrado
                   </td>
                 </tr>
@@ -158,6 +161,9 @@ export default async function MotoristasPage({
                     </td>
                     <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100 font-mono text-xs">
                       {formatCPF(m.profiles?.cpf)}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
+                      {[m.profiles?.cidade, m.profiles?.estado].filter(Boolean).join(' / ') || '—'}
                     </td>
                     <td className="px-4 py-3 text-zinc-900 dark:text-zinc-100">
                       {m.cnh_numero ?? '—'}
