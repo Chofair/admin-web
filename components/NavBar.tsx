@@ -18,6 +18,7 @@ import {
   LogOut,
   HandCoins,
   Accessibility,
+  MapPin,
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { logout } from '@/app/auth/actions';
@@ -34,6 +35,7 @@ const links = [
   { href: '/cancelamentos-pagamento', label: 'Reembolsos', Icon: BadgeDollarSign },
   { href: '/pagamentos', label: 'Pagamentos', Icon: CreditCard },
   { href: '/repasses', label: 'Repasses', Icon: HandCoins },
+  { href: '/cidades', label: 'Cidades', Icon: MapPin },
   { href: '/google-maps', label: 'Google Maps', Icon: MapPinned },
   { href: '/aplicativo', label: 'Aplicativo', Icon: Smartphone },
 ];
