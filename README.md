@@ -1,5 +1,12 @@
 This repository contains the Admin Web panel, a [Next.js](https://nextjs.org) application generated with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Site público
+
+As páginas institucionais `/` e `/aplicativo` compartilham os textos dos serviços,
+contatos e links das lojas em `lib/site-content.ts`. Consulte
+[a documentação do site](docs/public-site.md) para detalhes do QR Code,
+acessibilidade e origem dos arquivos de imagem.
+
 ## Getting Started
 
 First, run the development server:

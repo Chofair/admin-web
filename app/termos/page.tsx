@@ -1,8 +1,14 @@
-import LandingHeader from '@/components/LandingHeader';
+import type { Metadata } from 'next';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import BackToHome from '@/components/marketing/BackToHome';
+import LegalPageLayout from '@/components/marketing/LegalPageLayout';
+import styles from '@/components/marketing/marketing.module.css';
 
-export const metadata = {
-	title: 'Termos de Uso — Chofair',
+export const metadata: Metadata = {
+  title: 'Termos de Uso — Chofair',
+  description: 'Conheça os termos de uso da Chofair e as condições para clientes e contratantes.',
+  icons: { icon: '/brand/chofair-icon.png', apple: '/brand/chofair-icon.png' },
 };
 
 const sections = [
@@ -248,127 +254,70 @@ const sections = [
 const alpha = 'abcdefghijklmnopqrstuvwxyz';
 
 export default function TermosPage() {
-	return (
-		<div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col">
-			<LandingHeader />
+  return (
+    <LegalPageLayout
+      title="Termos de Uso"
+      description="Informações sobre o uso da Chofair e as condições para clientes e contratantes."
+    >
+      <div className={styles.legalIntro}>
+        <p><strong>Termo de Uso do Cliente</strong></p>
+        <p>
+          A CHOFAIR é uma plataforma digital operada por{' '}
+          <strong>CHOFAIR TECNOLOGIA E MOBILIDADE LTDA</strong>, inscrita no CNPJ sob nº{' '}
+          <strong>65.471.912/0001-97</strong>, com sede na{' '}
+          <strong>Rua Maringá, nº 188, Jardim Paraná, Registro/SP, CEP 11900-000, Brasil</strong>.
+        </p>
+      </div>
 
-			<main className="flex-1 pt-24 pb-20">
-				<div className="max-w-3xl mx-auto px-6">
-					{/* Page header */}
-					<div className="mb-10">
-						<Link href="/" className="text-sm text-[#0058A3] hover:underline">
-							← Voltar para o início
-						</Link>
-						<h1 className="text-4xl font-extrabold mt-6 mb-3">
-							Termo de Uso do Cliente
-						</h1>
-						<div className="flex flex-col gap-1 text-sm text-slate-500 dark:text-slate-400">
-							<p>
-								Contato/Suporte:{' '}
-								<a
-									href="mailto:suporte@chofair.com.br"
-									className="text-[#0058A3] hover:underline">
-									suporte@chofair.com.br
-								</a>
-							</p>
-							<p>
-								Última atualização:{' '}
-								{new Date().toLocaleDateString('pt-BR', {
-									day: '2-digit',
-									month: 'long',
-									year: 'numeric',
-								})}
-							</p>
-						</div>
-						<p className="mt-4 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-							A CHOFAIR é uma plataforma digital operada por{' '}
-							<strong>CHOFAIR TECNOLOGIA E MOBILIDADE LTDA</strong>, inscrita
-							no CNPJ sob nº <strong>65.471.912/0001-97</strong>, com sede na{' '}
-							<strong>
-								Rua Maringá, nº 188, Jardim Paraná, Registro/SP, CEP 11900-000,
-								Brasil
-							</strong>.
-						</p>
-					</div>
+      <details className={styles.legalContents}>
+        <summary>Neste documento <ChevronDown size={19} aria-hidden="true" /></summary>
+        <nav aria-label="Tópicos dos termos de uso">
+          <ol>
+            {sections.map((section, index) => (
+              <li key={section.title}><a href={'#termo-' + (index + 1)}>{section.title}</a></li>
+            ))}
+          </ol>
+        </nav>
+      </details>
 
-					{/* Sections */}
-					<div className="space-y-8">
-						{sections.map((section, si) => (
-							<section key={section.title}>
-								<h2 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-3 uppercase tracking-wide">
-									{section.title}
-								</h2>
+      {sections.map((section, si) => (
+        <section id={'termo-' + (si + 1)} className={styles.legalSection} key={section.title} aria-labelledby={'termo-titulo-' + (si + 1)}>
+          <h2 id={'termo-titulo-' + (si + 1)}>{section.title}</h2>
+          {'intro' in section && section.intro && <p>{section.intro}</p>}
+          {'letters' in section && section.letters && (
+            <ul className={styles.legalLetterList}>
+              {section.letters.map((letter, li) => (
+                <li key={letter}><span>{alpha[li]})</span><span>{letter}</span></li>
+              ))}
+            </ul>
+          )}
+          {'items' in section && section.items && (
+            <div className={styles.legalTextStack}>
+              {section.items.map((item, ii) => {
+                const subLetters = 'subLetters' in section
+                  ? section.subLetters as Partial<Record<number, string[]>>
+                  : undefined;
+                const sub = subLetters?.[ii];
+                return (
+                  <div key={item}>
+                    <p><span className={styles.legalParagraphNumber}>{si + 1}.{ii + 1}</span>{' '}{item}</p>
+                    {sub && (
+                      <ul className={styles.legalLetterList}>
+                        {sub.map((letter, li) => <li key={letter}><span>{alpha[li]})</span><span>{letter}</span></li>)}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      ))}
 
-								{'intro' in section && section.intro && (
-									<p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
-										{section.intro}
-									</p>
-								)}
-
-								{'letters' in section && section.letters && (
-									<ul className="space-y-1.5 mb-2">
-										{section.letters.map((letter, li) => (
-											<li
-												key={li}
-												className="flex gap-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-												<span className="font-semibold text-slate-700 dark:text-slate-300 shrink-0">
-													{alpha[li]})
-												</span>
-												<span>{letter}</span>
-											</li>
-										))}
-									</ul>
-								)}
-
-								{'items' in section && section.items && (
-									<div className="space-y-3">
-										{section.items.map((item, ii) => {
-											const subLetters =
-												'subLetters' in section
-													? (section.subLetters as Partial<
-															Record<number, string[]>
-														>)
-													: undefined;
-											const sub = subLetters?.[ii];
-											const num = `${si + 1}.${ii + 1}`;
-											return (
-												<div key={ii}>
-													<p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-														<span className="font-semibold text-slate-700 dark:text-slate-300">
-															{num}
-														</span>{' '}
-														{item}
-													</p>
-													{sub && (
-														<ul className="mt-2 ml-6 space-y-1.5">
-															{sub.map((s: string, si2: number) => (
-																<li
-																	key={si2}
-																	className="flex gap-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-																	<span className="font-semibold text-slate-500 dark:text-slate-400 shrink-0">
-																		{alpha[si2]})
-																	</span>
-																	<span>{s}</span>
-																</li>
-															))}
-														</ul>
-													)}
-												</div>
-											);
-										})}
-									</div>
-								)}
-
-								<div className="mt-6 border-b border-slate-200 dark:border-slate-800" />
-							</section>
-						))}
-					</div>
-				</div>
-			</main>
-
-			<footer className="px-6 py-5 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
-				© {new Date().getFullYear()} Chofair. Todos os direitos reservados.
-			</footer>
-		</div>
-	);
+      <div className={styles.legalClosing}>
+        <BackToHome />
+        <Link href="/exclusao-de-conta" className={styles.legalRelatedLink}>Exclusão de Conta e Dados <ArrowRight size={17} aria-hidden="true" /></Link>
+      </div>
+    </LegalPageLayout>
+  );
 }

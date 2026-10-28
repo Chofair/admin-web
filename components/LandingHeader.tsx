@@ -1,42 +1,29 @@
 import Link from 'next/link';
-import ThemeToggle from '@/components/ThemeToggle';
+import { InstagramIcon, WhatsAppIcon } from '@/components/marketing/BrandIcons';
+import { SITE_CONTACT, SITE_NAVIGATION } from '@/lib/site-content';
+import BrandLogo from '@/components/marketing/BrandLogo';
+import MobileNavigation from '@/components/marketing/MobileNavigation';
+import styles from '@/components/marketing/marketing.module.css';
 
 export default function LandingHeader() {
-	return (
-		<header className="fixed top-0 left-0 right-0 z-50 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-			<div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-				<Link href="/" className="text-2xl font-bold text-[#0058A3]">Chofair</Link>
-				<div className="flex items-center gap-4">
-					<nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500 dark:text-slate-400">
-						<a
-							href="#como-funciona"
-							className="hover:text-slate-900 dark:hover:text-white transition-colors">
-							Como funciona
-						</a>
-						<a
-							href="#vantagens"
-							className="hover:text-slate-900 dark:hover:text-white transition-colors">
-							Vantagens
-						</a>
-						<a
-							href="#motoristas"
-							className="hover:text-slate-900 dark:hover:text-white transition-colors">
-							Motoristas
-						</a>
-						<a
-							href="#contato"
-							className="hover:text-slate-900 dark:hover:text-white transition-colors">
-							Contato
-						</a>
-						<a
-							href="/aplicativo"
-							className="hover:text-slate-900 dark:hover:text-white transition-colors">
-							Aplicativo
-						</a>
-					</nav>
-					<ThemeToggle />
-				</div>
-			</div>
-		</header>
-	);
+  return (
+    <header className={styles.header}>
+      <a className={styles.skipLink} href="#conteudo">Pular para o conteúdo</a>
+      <div className={styles.headerInner}>
+        <Link href="/" className={styles.brandLink} aria-label="Chofair — página inicial"><BrandLogo /></Link>
+        <nav className={styles.desktopNavigation} aria-label="Navegação principal">
+          {SITE_NAVIGATION.map(({ href, label }) => <Link key={href} href={href}>{label}</Link>)}
+        </nav>
+        <div className={styles.headerActions}>
+          <a href={SITE_CONTACT.instagramHref} target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="Instagram da Chofair (abre em uma nova aba)" title="Instagram da Chofair">
+            <InstagramIcon size={23} aria-hidden="true" />
+          </a>
+          <a href={SITE_CONTACT.whatsappHref} target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="Conversar com a Chofair pelo WhatsApp (abre em uma nova aba)" title="WhatsApp da Chofair">
+            <WhatsAppIcon size={23} aria-hidden="true" />
+          </a>
+          <MobileNavigation />
+        </div>
+      </div>
+    </header>
+  );
 }
