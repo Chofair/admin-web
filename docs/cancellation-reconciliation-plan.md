@@ -1,6 +1,6 @@
 # Conciliação limitada após cancelamento
 
-Status: implementado e ativado somente no staging `nwyjzyfuxxhqczdtkjnd`, para pagamentos sandbox. Produção não foi alterada. A mudança está no backend do ChofairApp e no painel; não requer versão nova Android/iOS.
+Status: implementado e ativado no staging `nwyjzyfuxxhqczdtkjnd` para pagamentos sandbox e promovido com autorização à produção `jzxnzrtefgqhbopbcdxy` em 29/10/2026, apenas para pagamentos production. A mudança está no backend do ChofairApp e no painel; não requer versão nova Android/iOS. A comparação dos ambientes e as validações estão no [registro de produção](production-promotion-2026-10-29.md).
 
 ## Objetivo e regra
 
@@ -82,9 +82,9 @@ Implementar com migrations incrementais no ChofairApp, funções e apresentaçã
 
 ## Publicação e detalhes implementados
 
-- Migration `ChofairApp/supabase/migrations/20261029130000_bounded_cancellation_reconciliation.sql`, aplicada somente ao staging. Os controles ficam desativados por padrão; a ativação foi feita separadamente apenas para sandbox nesse projeto. O controle `production` permaneceu desativado.
-- Correção incremental `20261029140000_prioritize_paid_cancellation_refunds.sql`, também aplicada somente no staging: reembolsos de pagamentos conhecidos são elegíveis imediatamente e têm prioridade sobre consultas incertas. Casos concluídos não entram na rotina de expiração dos controles. A tela apresenta tarefas normais de devolução como reembolso, sem cartão adicional de cobrança incerta.
-- Funções atualizadas no staging: `processar-reembolsos-automaticos` e `mercadopago-webhook`. A conciliação e a tarefa de reembolso existente compartilham a reserva e o orçamento da cobrança. A seleção antiga de tentativas não disputa esses cancelamentos com o novo processamento.
+- Migration `ChofairApp/supabase/migrations/20261029130000_bounded_cancellation_reconciliation.sql`, aplicada ao staging e à produção. Os controles ficam desativados por padrão; a ativação foi feita separadamente para sandbox no staging e para production em produção. O outro ambiente permanece desativado em cada projeto.
+- Correção incremental `20261029140000_prioritize_paid_cancellation_refunds.sql`, aplicada nos dois projetos: reembolsos de pagamentos conhecidos são elegíveis imediatamente e têm prioridade sobre consultas incertas. Casos concluídos não entram na rotina de expiração dos controles. A tela apresenta tarefas normais de devolução como reembolso, sem cartão adicional de cobrança incerta.
+- Funções atualizadas nos dois projetos: `processar-reembolsos-automaticos` e `mercadopago-webhook`. A conciliação e a tarefa de reembolso existente compartilham a reserva e o orçamento da cobrança. A seleção antiga de tentativas não disputa esses cancelamentos com o novo processamento.
 - O acompanhamento fica nas próprias cobranças, nas colunas `cc_*`. As tabelas auxiliares guardam limites por ambiente, reservas HTTP e recibos de notificações; não criam outra fila financeira. RLS, privilégios e trigger impedem clientes de alterar contadores ou forjar resultados.
 - Uma rodada só é debitada quando a primeira requisição vai ser enviada. Uma recusa do limitador antes do HTTP não consome consultas; uma autorização adicional sem nenhuma requisição enviada é preservada após falha do worker.
 - Cada rodada autoriza até dois GETs e uma escrita financeira já elegível. O reembolso mantém a chave de idempotência original. Os contadores da cobrança e da tarefa não são zerados por uma solicitação administrativa nesse fluxo.

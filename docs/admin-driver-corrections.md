@@ -55,7 +55,7 @@ As migrations estão no projeto irmão **ChofairApp**, em ordem:
 6. `20261028170000_preserve_untouched_driver_profile_fields.sql`
 7. `20261029120000_admin_driver_canonical_email.sql`
 
-Elas foram aplicadas **somente no staging `nwyjzyfuxxhqczdtkjnd`**. As funções `admin-corrigir-email-motorista` e `excluir-conta` foram publicadas somente nesse mesmo projeto. Produção não foi alterada.
+Elas foram aplicadas inicialmente no staging `nwyjzyfuxxhqczdtkjnd` e promovidas, com autorização, à produção `jzxnzrtefgqhbopbcdxy` em 29/10/2026. As funções `admin-corrigir-email-motorista` e `excluir-conta` estão publicadas nos dois ambientes. A promoção incluiu também as duas migrations e duas funções financeiras, totalizando nove migrations e quatro funções. O [registro de produção](production-promotion-2026-10-29.md) descreve a comparação e as validações.
 
 Para uma promoção posterior, conferir o projeto alvo e o dry-run, aplicar as migrations em ordem, publicar as duas Edge Functions e então publicar o painel. Não disponibilizar o novo painel contra um banco sem estas migrations. A função de correção valida o JWT internamente e exige permissão administrativa; sua configuração usa `verify_jwt = false`.
 

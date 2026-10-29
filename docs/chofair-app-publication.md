@@ -56,9 +56,9 @@ Essa atualização atende aos dados introduzidos pela edição no painel. Não a
 
 ## Publicação
 
-As sete migrations e as duas Edge Functions já foram aplicadas/publicadas **somente no staging**. Produção não foi alterada nesta entrega.
+As sete migrations e as duas Edge Functions foram aplicadas/publicadas primeiro no staging. Em 29/10/2026, após autorização da promoção, foram publicadas também em produção, junto do complemento financeiro abaixo. Consulte o [registro de produção](production-promotion-2026-10-29.md).
 
-Quando a promoção for aprovada, conferir o projeto alvo e o dry-run, reconciliar a divergência anterior de histórico descrita no [guia do painel](admin-driver-corrections.md), aplicar as migrations em ordem, publicar as duas Edge Functions e publicar o admin-web. Subir os arquivos ao Git, isoladamente, não executa essas etapas.
+Para futuras promoções, conferir o projeto alvo e o dry-run, revisar as divergências de histórico descritas no [guia do painel](admin-driver-corrections.md), aplicar as migrations em ordem, publicar as Edge Functions e publicar o admin-web. Subir os arquivos ao Git, isoladamente, não executa essas etapas.
 
 Nenhum build ou publicação nas lojas é exigido: no repositório ChofairApp, a implementação está em `supabase/`, com testes adicionais em `tests/`. A unificação do e-mail acrescentou a sétima migration; não exigiu novo deploy de função.
 
@@ -66,10 +66,10 @@ Nenhum build ou publicação nas lojas é exigido: no repositório ChofairApp, a
 
 A migration `20261029130000_bounded_cancellation_reconciliation.sql` acrescenta o acompanhamento limitado nas cobranças existentes, controles compartilhados de chamadas e reservas, deduplicação de notificações e uma solicitação administrativa de verificação com limite. Não altera telas ou serviços do aplicativo móvel.
 
-As funções `processar-reembolsos-automaticos` e `mercadopago-webhook` foram atualizadas somente no staging. O primeiro reutiliza a tarefa de reembolso e a chave de idempotência existentes; o segundo valida e deduplica o envelope autenticado, aceitando confirmação tardia sem reiniciar os contadores. A função de conciliação de pagamentos ainda pendentes não recebeu nova interface; sua seleção SQL exclui os cancelamentos assumidos pelo processamento compartilhado.
+As funções `processar-reembolsos-automaticos` e `mercadopago-webhook` foram atualizadas primeiro no staging e depois em produção. O primeiro reutiliza a tarefa de reembolso e a chave de idempotência existentes; o segundo valida e deduplica o envelope autenticado, aceitando confirmação tardia sem reiniciar os contadores. A função de conciliação de pagamentos ainda pendentes não recebeu nova interface; sua seleção SQL exclui os cancelamentos assumidos pelo processamento compartilhado. A versão própria dessa Edge Function em produção foi preservada.
 
 Nesse complemento, subir as migrations `20261029130000_bounded_cancellation_reconciliation.sql` e `20261029140000_prioritize_paid_cancellation_refunds.sql`, os arquivos financeiros modificados em `supabase/functions/`, o teste SQL `supabase/tests/bounded_cancellation_reconciliation_test.sql` e o teste `tests/boundedCancellation.spec.ts`. Somando os escopos documentados, há nove migrations novas e quatro funções novas/atualizadas. Nenhum APK, build iOS ou atualização OTA é necessário por estas mudanças.
 
-A segunda migration financeira remove a espera inicial para reembolsos de pagamentos já conhecidos, prioriza essas tarefas e mantém os casos concluídos fora da expiração do acompanhamento. Não cria nem altera agendamentos e não exige republicar as Edge Functions já atualizadas. A alteração foi aplicada somente no staging.
+A segunda migration financeira remove a espera inicial para reembolsos de pagamentos já conhecidos, prioriza essas tarefas e mantém os casos concluídos fora da expiração do acompanhamento. Não cria nem altera agendamentos e não exige republicar as Edge Functions já atualizadas. A alteração está aplicada no staging e em produção.
 
-O processamento novo fica desativado por padrão na migration. Depois de publicar e testar as duas funções no projeto correto, ativar apenas o ambiente aprovado no controle do banco. Nesta entrega foi ativado apenas `sandbox` no staging; `production` permaneceu desativado e o projeto de produção não foi modificado. Conferir a divergência de histórico descrita acima antes de qualquer promoção geral. Detalhes e parâmetros estão no [guia de conciliação](cancellation-reconciliation-plan.md).
+O processamento novo fica desativado por padrão na migration. Depois de publicar e testar as duas funções no projeto correto, ativar apenas o ambiente aprovado no controle do banco. O staging mantém apenas `sandbox` ativo; a promoção de 29/10/2026 ativou apenas `production` no projeto de produção, mantendo `sandbox` desativado nele. Nenhum cron, secret, seed ou dado de teste foi copiado entre os ambientes. Conferir a divergência de histórico descrita acima antes de qualquer promoção geral. Detalhes e parâmetros estão no [guia de conciliação](cancellation-reconciliation-plan.md).
