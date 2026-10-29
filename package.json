@@ -6,7 +6,8 @@
     "dev": "node scripts/dev-staging.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:driver-edit": "tsc lib/driver-edit-validation.ts tests/driver-edit-validation.test.ts --module commonjs --target es2022 --esModuleInterop --skipLibCheck --outDir node_modules/.cache/driver-edit-tests && node node_modules/.cache/driver-edit-tests/tests/driver-edit-validation.test.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",
