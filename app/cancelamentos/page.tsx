@@ -1,12 +1,14 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { ArrowRight, BadgeCheck, CircleAlert, ClipboardList, History } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import AuditEventAccordion from '@/components/AuditEventAccordion';
 import { requireAdmin } from '@/lib/auth';
 import { formatAdminDateTime } from '@/lib/admin-format';
 import { casePresentation, cancellationLabels, originLabels, rideLabels, eventLabels, type CancellationCase } from '@/lib/cancellation-presentation';
 import { DecisionForm } from './DecisionForm';
 import { RefreshButton } from './RefreshButton';
 import { RetryAutomaticRefundForm } from '../cancelamentos-pagamento/RetryAutomaticRefundForm';
+import CancellationReconciliationPanel from './CancellationReconciliationPanel';
 const money = (c: number | null) => c === null ? '—' : (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const button = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800';
 const section = 'rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-700 dark:bg-zinc-950';
@@ -72,15 +74,21 @@ export default async function Cancellations({ searchParams }: { searchParams: Pr
               {c.repasse === 'aprovado' && <DecisionForm key={c.solicitacao_id + ":transferencia"} id={c.solicitacao_id} topic="transferencia" />}
             </section>
           </div>
+          {Boolean(c.conciliacoes?.length) && <CancellationReconciliationPanel items={c.conciliacoes!} />}
           {c.reembolsos.length > 0 && <section aria-label="Processamento das devoluções" className="space-y-3"><h3 className="font-semibold">Devoluções por pagamento</h3>{c.reembolsos.map(r => <div key={r.id} className={`rounded-xl border p-4 ${r.status === 'reembolsado' ? 'border-emerald-200 dark:border-emerald-900' : 'border-amber-200 dark:border-amber-900'}`}>
             <div className="flex flex-wrap justify-between gap-2"><p className="font-semibold">{money(r.valor_centavos)} · {cancellationLabels[r.status] ?? r.status}</p><span className="text-xs text-zinc-600 dark:text-zinc-400">{r.ambiente === 'sandbox' ? 'Ambiente de testes' : 'Produção'}</span></div>
             {r.status === 'falha' && <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">A devolução precisa de verificação. Consulte os detalhes antes de solicitar nova tentativa.</p>}
             <details className="mt-3 text-sm"><summary className="cursor-pointer py-2 font-medium text-blue-700 dark:text-blue-400">Detalhes do processamento</summary><div className="mt-2 space-y-1 break-all text-zinc-600 dark:text-zinc-400"><div>Pagamento: {r.pagamento_id}</div><div>Referência do reembolso: {r.provedor_reembolso_id ?? 'Aguardando confirmação'}</div><div>Tentativas: {r.tentativas}</div>{r.ultimo_codigo && <div>Diagnóstico: {r.ultimo_codigo}</div>}</div></details>
-            {r.status === 'falha' && <RetryAutomaticRefundForm refundId={r.id} />}</div>)}</section>}
-          <details className="border-t border-zinc-200 pt-3 dark:border-zinc-800"><summary className="cursor-pointer py-2 text-sm font-semibold"><History className="mr-2 inline" size={16} /> Histórico e responsáveis ({c.eventos.length})</summary>
+            {r.status === 'falha' && !c.conciliacoes?.some(item => item.pagamento_id === r.pagamento_id && item.suspensa_em) && <RetryAutomaticRefundForm refundId={r.id} />}</div>)}</section>}
+          <section className="border-t border-zinc-200 pt-3 dark:border-zinc-800"><h3 className="py-2 text-sm font-semibold"><History className="mr-2 inline" size={16} /> Histórico e responsáveis ({c.eventos.length})</h3>
             <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">Início: {formatAdminDateTime(c.iniciada_em)} · Encerramento: {formatAdminDateTime(c.finalizada_em)}</p>
-            <ol className="mt-4 space-y-4 border-l border-zinc-200 pl-4 dark:border-zinc-700">{c.eventos.map(e => <li key={e.id} className="text-sm"><p className="font-medium">{eventLabels[e.evento] ?? e.evento.replaceAll('_',' ')}</p><p className="mt-1 whitespace-pre-wrap text-zinc-600 dark:text-zinc-400">{e.motivo}</p><p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{formatAdminDateTime(e.criado_em)} · {e.ator_id ? `Responsável: ${e.ator_id}` : 'Ação automática do sistema'}</p></li>)}</ol>
-          </details>
+            {!c.eventos.length ? <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Nenhum evento registrado.</p> : <ol className="mt-4 space-y-3">{c.eventos.map(e => <li key={e.id}>
+              <AuditEventAccordion title={eventLabels[e.evento] ?? e.evento.replaceAll('_',' ')} metadata={formatAdminDateTime(e.criado_em)}>
+                <p className="whitespace-pre-wrap">{e.motivo}</p>
+                <p className="break-all text-xs text-zinc-600 dark:text-zinc-400">{e.ator_id ? `Responsável: ${e.ator_id}` : 'Ação automática do sistema'}</p>
+              </AuditEventAccordion>
+            </li>)}</ol>}
+          </section>
         </article>;
       })}
       {!id && <div className="flex flex-wrap justify-between gap-3">{cursor ? <Link className={button} href={`/cancelamentos?status=${status}`}>Voltar aos mais recentes</Link> : <span />}{cases.length === 40 && <Link className={button} href={`/cancelamentos?status=${status}&cursor=${encodeURIComponent(cases[cases.length-1].solicitada_em)}`}>Carregar mais antigos <ArrowRight size={16} /></Link>}</div>}

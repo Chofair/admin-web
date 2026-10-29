@@ -191,9 +191,20 @@ export async function retryAutomaticRefund(
     return { status: 'error', message: 'Informe um reembolso válido e uma justificativa entre 10 e 500 caracteres.' };
   const { error } = await supabase.rpc('admin_reprocessar_reembolso_automatico',
     { reembolso_id_input: id, motivo_input: reason });
-  if (error) return { status: 'error', message: 'Não foi possível reprocessar. Atualize a página e confira se o reembolso ainda está em falha.' };
+  if (error) return { status: 'error', message: error.code === 'PT429' ? 'Aguarde 30 minutos entre verificações. O limite é de três solicitações em 24 horas por cobrança.' : 'Não foi possível reprocessar. Atualize a página e confira se o reembolso ainda está em falha.' };
   revalidatePath('/cancelamentos-pagamento');
   revalidatePath('/cancelamentos');
   revalidatePath('/admin');
   return { status: 'success', message: 'Nova tentativa agendada. Acompanhe a confirmação nesta fila.' };
+}
+
+export async function requestCancellationVerification(_previous: ManualRefundActionState, formData: FormData): Promise<ManualRefundActionState> {
+  const { supabase } = await requireAdmin();
+  const id = String(formData.get('pagamento_id') ?? '');
+  const reason = String(formData.get('motivo') ?? '').trim();
+  if (!UUID_PATTERN.test(id) || reason.length < 10 || reason.length > 500) return { status: 'error', message: 'Informe uma cobrança válida e uma justificativa entre 10 e 500 caracteres.' };
+  const { error } = await supabase.rpc('admin_solicitar_verificacao_cancelamento', { pagamento_id_input: id, motivo_input: reason });
+  if (error) return { status: 'error', message: error.code === 'PT429' ? 'Aguarde 30 minutos entre verificações. O limite é de três solicitações em 24 horas por cobrança.' : 'A verificação não pôde ser agendada. Atualize a página e confira a situação da cobrança.' };
+  revalidatePath('/cancelamentos'); revalidatePath('/cancelamentos-pagamento'); revalidatePath('/admin');
+  return { status: 'success', message: 'Verificação adicional agendada. O histórico e os limites automáticos foram preservados.' };
 }

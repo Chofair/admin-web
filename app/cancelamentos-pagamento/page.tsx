@@ -10,6 +10,7 @@ import {
   RefreshCcw,
 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import AuditEventAccordion from '@/components/AuditEventAccordion';
 import { requireAdmin } from '@/lib/auth';
 import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
 import {
@@ -303,10 +304,10 @@ export default async function PaymentCancellationsPage({
 
                 {cancellation.reembolso_manual && (
                   <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm dark:border-emerald-900 dark:bg-emerald-950">
-                    <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-200">
+                    <AuditEventAccordion title={<span className="inline-flex items-center gap-2 text-emerald-900 dark:text-emerald-200">
                       <CheckCircle2 size={17} />
                       Reembolso manual auditado
-                    </div>
+                    </span>} metadata={<>{cancellation.reembolso_manual.administrador_nome ?? 'Administrador'} · {formatDateTime(cancellation.reembolso_manual.realizado_em)}</>}>
                     <dl className="mt-3 grid gap-3 text-emerald-900 dark:text-emerald-200 sm:grid-cols-2 lg:grid-cols-4">
                       <div>
                         <dt className="text-xs opacity-70">Motivo</dt>
@@ -344,6 +345,7 @@ export default async function PaymentCancellationsPage({
                     <p className="mt-3 text-xs text-emerald-800 dark:text-emerald-300">
                       {cancellation.reembolso_manual.observacao}
                     </p>
+                    </AuditEventAccordion>
                   </div>
                 )}
 
