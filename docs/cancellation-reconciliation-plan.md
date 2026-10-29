@@ -15,7 +15,7 @@ Corrigir as tentativas de cartão com resultado desconhecido que deixam de ser c
 
 Não foi criado cron para acompanhar o painel. A implantação inicial reutilizou os agendamentos existentes e preservou suas frequências. Posteriormente, a migration `20261029150000_deduplicate_payment_reconciliation_schedule.sql` passou a conciliação de pagamentos pendentes para dez minutos e removeu o cron redundante de seis horas em produção; esse ajuste já está aplicado nos dois ambientes.
 
-A migration seguinte, `20261029160000_schedule_automatic_refunds_every_five_minutes.sql`, prepara o processamento de reembolsos a cada cinco minutos. Ela foi testada com rollback e permanece pendente de publicação; até sua aplicação, o cron de reembolsos continua a cada minuto. O cancelamento de corridas expiradas mantém seu agendamento separado a cada minuto.
+A migration seguinte, `20261029160000_schedule_automatic_refunds_every_five_minutes.sql`, foi testada com rollback e aplicada com autorização no staging e em produção em 29/10/2026. O processamento de reembolsos agora ocorre a cada cinco minutos nos dois ambientes. O cancelamento de corridas expiradas mantém seu agendamento separado a cada minuto.
 
 O executor de cancelamentos e reembolsos seleciona até três tarefas elegíveis por execução. O intervalo do cron define quando procura trabalho; cada tarefa também respeita seu próximo horário, suas reservas e seu orçamento. A passagem de um para cinco minutos reduz os disparos previstos de 1.440 para 288 por dia, sem representar uma redução proporcional garantida do consumo total do banco ou do provedor. Em fila maior, a capacidade por rodada pode aumentar a espera e deve ser acompanhada.
 
@@ -27,7 +27,7 @@ Adicionar à cobrança/tarefa os dados de controle necessários: próxima consul
 
 O orçamento pertence à cobrança e à sua investigação, não à execução do cron. Reservar atomicamente a cobrança com prazo de reserva e impedir que os workers de conciliação e cancelamento consultem o mesmo caso simultaneamente. Relacionar tarefas já existentes sem criar uma segunda fila.
 
-Agenda de referência para resultado desconhecido ou novas tentativas após resposta inconclusiva. O primeiro processamento de um reembolso já autorizado não aguarda cinco minutos:
+Agenda de referência para resultado desconhecido ou novas tentativas após resposta inconclusiva. O primeiro processamento de um reembolso já autorizado não recebe uma espera individual adicional de cinco minutos; fica elegível para a próxima rodada do cron, hoje executado a cada cinco minutos:
 
 | Rodada | Momento aproximado |
 | --- | --- |

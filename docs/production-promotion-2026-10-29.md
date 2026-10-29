@@ -65,12 +65,12 @@ Após a promoção descrita acima, os dois crons de conciliação foram comparad
 
 A migration `20261029150000_deduplicate_payment_reconciliation_schedule.sql` foi testada com rollback e aplicada no staging e em produção. Ela removeu o duplicado em produção e alterou o principal para dez minutos. Foram conferidos o comando original, a autenticação, o estado ativo e os outros jobs, preservados. Os dois ambientes passaram a ter nove agendamentos ativos.
 
-A migration `20261029160000_schedule_automatic_refunds_every_five_minutes.sql` foi preparada no ChofairApp, validada com rollback e mantida na branch atual da PR para publicação pelo responsável. O teste conferiu repetição segura e alteração exclusiva do intervalo do job de reembolsos. Nenhuma alteração persistente dessa nova migration foi feita nos bancos nesta etapa.
+A migration `20261029160000_schedule_automatic_refunds_every_five_minutes.sql` foi preparada no ChofairApp, validada com rollback e, após autorização, aplicada primeiro no staging e depois em produção em 29/10/2026. O dry-run de cada projeto listou somente essa migration, sem seeds ou roles. A verificação posterior confirmou a versão registrada, o intervalo de cinco minutos e a preservação do comando, owner, estado ativo e demais agendamentos. O dry-run final dos diretórios isolados ficou sem pendências da entrega. A migration permanece versionada na branch da PR do ChofairApp; sua aplicação no banco não depende de push ao Git.
 
-| Rotina | Configuração aplicada nos dois ambientes | Próxima alteração preparada |
-| --- | --- | --- |
-| Cancelamento de corridas expiradas | A cada minuto | Nenhuma |
-| Conciliação de pagamentos pendentes | A cada dez minutos | Nenhuma |
-| Processamento automático de reembolsos | A cada minuto | A cada cinco minutos, após aplicar `20261029160000` |
+| Rotina | Configuração aplicada nos dois ambientes |
+| --- | --- |
+| Cancelamento de corridas expiradas | A cada minuto |
+| Conciliação de pagamentos pendentes | A cada dez minutos |
+| Processamento automático de reembolsos | A cada cinco minutos |
 
-A troca de frequência não altera elegibilidade, prioridade, limites de chamadas, chave de idempotência ou webhook. O executor continua selecionando até três tarefas por rodada; diminuir a frequência reduz as execuções previstas e pode aumentar a espera em uma fila maior. Não foi necessário publicar funções ou versão do aplicativo para preparar esse ajuste.
+A troca de frequência não altera elegibilidade, prioridade, limites de chamadas, chave de idempotência ou webhook. O executor continua selecionando até três tarefas por rodada; diminuir a frequência reduz as execuções previstas e pode aumentar a espera em uma fila maior. Não foi necessário republicar funções ou publicar uma versão do aplicativo para concluir esse ajuste.
