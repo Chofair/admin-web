@@ -69,8 +69,14 @@ A migration `20261029160000_schedule_automatic_refunds_every_five_minutes.sql` f
 
 | Rotina | Configuração aplicada nos dois ambientes |
 | --- | --- |
-| Cancelamento de corridas expiradas | A cada minuto |
+| Cancelamento de corridas expiradas | A cada cinco minutos |
 | Conciliação de pagamentos pendentes | A cada dez minutos |
 | Processamento automático de reembolsos | A cada cinco minutos |
 
 A troca de frequência não altera elegibilidade, prioridade, limites de chamadas, chave de idempotência ou webhook. O executor continua selecionando até três tarefas por rodada; diminuir a frequência reduz as execuções previstas e pode aumentar a espera em uma fila maior. Não foi necessário republicar funções ou publicar uma versão do aplicativo para concluir esse ajuste.
+
+Em seguida, a migration `20261029170000_schedule_expired_ride_cancellations_every_five_minutes.sql` foi testada com rollback em staging e aplicada nos dois projetos. Ela altera somente a frequência de `cancelar-corridas-expiradas` para cinco minutos. A validação incluiu repetição segura, preservação dos demais jobs e confirmação do trigger que bloqueia aceite após T−15.
+
+O comando de produção usava maiúsculas, enquanto o de staging estava em minúsculas. A validação estrita da migration rejeitou a primeira tentativa em produção sem alterar o agendamento. Para executar a mesma migration imutável, a chamada SQL foi temporariamente normalizada para a mesma função e seu texto original foi restaurado imediatamente após a aplicação. A conferência final confirmou o hash original do comando, os demais atributos do job e os outros agendamentos preservados.
+
+O cancelamento passa a ser registrado na próxima rodada, com espera de até aproximadamente cinco minutos em condições normais; atrasos operacionais e lote podem ampliar esse tempo. O prazo T−15 continua valendo no banco independentemente do cron. O cron SQL direto passa de 1.440 para 288 execuções previstas por dia, sem representar uma economia proporcional garantida no banco inteiro. O worker financeiro também verifica expiração antes do lote; a tarefa direta foi mantida para não condicionar o cancelamento à configuração de reembolsos.
