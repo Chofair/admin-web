@@ -20,7 +20,7 @@ export default async function AccessibilityQueuePage({ searchParams }: { searchP
   const result = await listAccessibilityApplications(supabase, selected === 'all' ? null : selected, page);
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="mb-6 flex items-center gap-3">
           <Accessibility className="text-blue-600" />
@@ -49,6 +49,6 @@ export default async function AccessibilityQueuePage({ searchParams }: { searchP
           </div>
         </section>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

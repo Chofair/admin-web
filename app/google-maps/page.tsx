@@ -65,7 +65,7 @@ export default async function GoogleMapsMonitoringPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <MapsDashboardView
         dashboard={dashboard}
         monthKey={monthKey}
@@ -73,6 +73,6 @@ export default async function GoogleMapsMonitoringPage({
         selectedApi={selectedApi}
         selectedSku={selectedSku}
       />
-    </div>
+    </NavBar></div>
   );
 }

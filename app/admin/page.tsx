@@ -17,7 +17,7 @@ import NavBar from '@/components/NavBar';
 import { getAdminRegistrationStats } from '@/lib/admin-driver-vehicles';
 import { countAdminProfiles } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
-import { countAdminRequests, getOperationalAlerts } from '@/lib/admin-operations';
+import { getAdminRequestSummary, getOperationalAlerts } from '@/lib/admin-operations';
 import { getAccessibilityStats } from '@/lib/admin-accessibility';
 
 async function getDashboardStats() {
@@ -25,17 +25,13 @@ async function getDashboardStats() {
   const [
     totalUsers,
     registrationStats,
-    totalSolicitacoes,
-    pendingSolicitacoes,
-    activeSolicitacoes,
+    requestSummary,
     operationalAlerts,
     accessibilityStats,
   ] = await Promise.all([
     countAdminProfiles(supabase, 'user'),
     getAdminRegistrationStats(supabase),
-    countAdminRequests(supabase),
-    countAdminRequests(supabase, ['pendente']),
-    countAdminRequests(supabase, ['confirmada', 'em_andamento']),
+    getAdminRequestSummary(supabase),
     getOperationalAlerts(supabase),
     getAccessibilityStats(supabase).catch(() => ({ pending_profiles: 0, pending_vehicles: 0, approved_profiles: 0, approved_vehicles: 0 })),
   ]);
@@ -44,9 +40,9 @@ async function getDashboardStats() {
     totalUsers,
     totalDrivers: registrationStats.total_motoristas,
     pendingDrivers: registrationStats.motoristas_pendentes,
-    totalSolicitacoes,
-    pendingSolicitacoes,
-    activeSolicitacoes,
+    totalSolicitacoes: requestSummary.total,
+    pendingSolicitacoes: requestSummary.pending,
+    activeSolicitacoes: requestSummary.active,
     pendingVehicles: registrationStats.veiculos_pendentes,
     totalPagamentos: registrationStats.total_pagamentos,
     paidPagamentos: registrationStats.pagamentos_pagos,
@@ -156,7 +152,7 @@ export default async function Dashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
         <h1 className="mb-6 text-xl font-semibold text-zinc-800 dark:text-zinc-200">
@@ -271,6 +267,6 @@ export default async function Dashboard() {
           </div>
         </section>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

@@ -3,7 +3,7 @@ import NavBar from '@/components/NavBar';
 export default function GoogleMapsLoading() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main
         aria-busy="true"
         aria-label="Carregando monitoramento Google Maps"
@@ -22,6 +22,6 @@ export default function GoogleMapsLoading() {
         </div>
         <div className="mt-10 h-72 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
       </main>
-    </div>
+    </NavBar></div>
   );
 }

@@ -1,6 +1,11 @@
 'use client';
 
-import Link from 'next/link';
+import Link, { useLinkStatus } from 'next/link';
+import Image from 'next/image';
+import appIcon from '@/public/brand/chofair-icon.png';
+import type { LucideIcon } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import styles from './admin-navigation.module.css';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -19,6 +24,9 @@ import {
   HandCoins,
   Accessibility,
   MapPin,
+  LoaderCircle,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { logout } from '@/app/auth/actions';
@@ -40,56 +48,62 @@ const links = [
   { href: '/aplicativo', label: 'Aplicativo', Icon: Smartphone },
 ];
 
-export default function NavBar() {
+function NavigationLabel({ Icon, label }: { Icon: LucideIcon; label: string }) {
+  const { pending } = useLinkStatus();
+  return <><span className="inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">{pending ? <LoaderCircle size={15} className="motion-safe:animate-spin" /> : <Icon size={15} />}</span><span className="whitespace-nowrap">{label}</span>{pending && <span role="status" className="sr-only">Carregando {label}…</span>}</>;
+}
+
+export default function NavBar({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { theme, toggle } = useTheme();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const closeMobileMenu = () => { if (desktop.matches) dialog.current?.close(); };
+    desktop.addEventListener('change', closeMobileMenu);
+    return () => desktop.removeEventListener('change', closeMobileMenu);
+  }, []);
 
-  return (
-    <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700 px-4 sm:px-6 py-4">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div>
-          <Link href="/admin" className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Chofair Admin</Link>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Painel de controle</p>
-        </div>
-        <div className="flex min-w-0 items-center gap-2">
-          <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-1 text-sm font-medium lg:pb-0">
-            {links.map(({ href, label, Icon }) => {
-              const isActive = pathname === href || pathname.startsWith(`${href}/`);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold'
-                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  <Icon size={15} />
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
-          <button
-            onClick={toggle}
-            aria-label="Alternar tema"
-            className="ml-2 p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          <form action={logout}>
-            <button
-              type="submit"
-              aria-label="Sair do painel"
-              title="Sair do painel"
-              className="p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-700 dark:hover:text-red-400 transition-colors"
-            >
-              <LogOut size={18} />
-            </button>
-          </form>
-        </div>
+  const navigation = (mobile = false) => <nav aria-label="Navegação principal" className={styles.navigation}>
+    {links.map(({ href, label, Icon }) => {
+      const isActive = pathname === href || pathname.startsWith(href + '/');
+      return <Link key={href} href={href} aria-current={isActive ? 'page' : undefined}
+        onClick={mobile ? () => dialog.current?.close() : undefined}
+        className={styles.link + (isActive ? ' ' + styles.active : '')}>
+        <NavigationLabel Icon={Icon} label={label} />
+      </Link>;
+    })}
+  </nav>;
+
+  return <div className={styles.layout}>
+    <a href="#admin-content" className={styles.skipLink}>Ir para o conteúdo</a>
+    <header className={styles.header}>
+      <Link href="/admin" aria-label="Chofair Admin — painel de controle" className={styles.brand}>
+        <Image src={appIcon} alt="" width={48} height={48} sizes="48px" className={styles.logo} />
+        <span><strong>Chofair Admin</strong><span>Painel de controle</span></span>
+      </Link>
+      <div className={styles.actions}>
+        <button onClick={toggle} aria-label="Alternar tema" className={styles.iconButton}>
+          {theme === 'dark' ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
+        </button>
+        <form action={logout}><button type="submit" aria-label="Sair do painel" title="Sair do painel" className={styles.iconButton}>
+          <LogOut size={19} aria-hidden="true" />
+        </button></form>
+        <button type="button" aria-label="Abrir menu de navegação" aria-expanded={menuOpen} aria-controls="admin-mobile-menu"
+          className={styles.iconButton + ' ' + styles.menuButton}
+          onClick={() => { dialog.current?.showModal(); setMenuOpen(true); }}><Menu size={21} aria-hidden="true" /></button>
       </div>
     </header>
-  );
+    <aside className={styles.sidebar} aria-label="Menu do painel">{navigation()}</aside>
+    <dialog ref={dialog} id="admin-mobile-menu" aria-labelledby="admin-menu-title" className={styles.mobileDialog}
+      onClose={() => setMenuOpen(false)}
+      onClick={event => { if (event.target !== event.currentTarget) return; const box = event.currentTarget.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.current?.close(); }}>
+      <div className={styles.dialogHeader}><h2 id="admin-menu-title">Menu do painel</h2>
+        <button type="button" className={styles.iconButton} aria-label="Fechar menu de navegação" onClick={() => dialog.current?.close()}><X size={21} aria-hidden="true" /></button>
+      </div>
+      {navigation(true)}
+    </dialog>
+    <div id="admin-content" tabIndex={-1} className={styles.content}>{children}</div>
+  </div>;
 }

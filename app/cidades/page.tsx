@@ -48,7 +48,7 @@ export default async function CidadesPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
         <div className="mb-6 flex items-center gap-3">
           <MapPin className="text-blue-600" />
@@ -148,6 +148,6 @@ export default async function CidadesPage({
           </table>
         </div>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

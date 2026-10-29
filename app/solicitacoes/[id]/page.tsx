@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import PayoutActionForm from '@/app/repasses/PayoutActionForm';
 import NavBar from '@/components/NavBar';
+import AuditEventAccordion from '@/components/AuditEventAccordion';
 import SafeExternalLink from '@/components/SafeExternalLink';
 import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
 import { getAdminProfilesByIds } from '@/lib/admin-profiles';
@@ -360,11 +361,9 @@ function ReviewAudit({ review }: { review: RideReviewContext }) {
       <p className="mt-3 text-sm text-purple-800 dark:text-purple-300">{review.motivo}</p>
       {review.status === 'resolvida' && (
         <div className="mt-4 border-t border-purple-200 pt-4 text-sm dark:border-purple-900">
-          <p className="font-semibold">
-            {formatLabel(review.decisao)} · {review.revisor_nome ?? 'Administrador'} ·{' '}
-            {formatDateTime(review.resolvida_em)}
-          </p>
-          <p className="mt-1">{review.observacao_admin}</p>
+          <AuditEventAccordion title={formatLabel(review.decisao)} metadata={<>{review.revisor_nome ?? 'Administrador'} · {formatDateTime(review.resolvida_em)}</>}>
+            <p className="whitespace-pre-wrap">{review.observacao_admin ?? 'Nenhuma observação adicional registrada.'}</p>
+          </AuditEventAccordion>
         </div>
       )}
     </section>
@@ -418,19 +417,13 @@ function CancellationAudit({
       </p>
       {refund && (
         <div className="mt-4 rounded-lg bg-white/70 p-4 text-sm text-purple-900 dark:bg-zinc-950/50 dark:text-purple-200">
-          <p className="font-semibold">
-            Reembolso manual: {formatCents(refund.valor_centavos)} via{' '}
-            {formatLabel(refund.metodo)}
-          </p>
-          <p className="mt-1">
-            {refund.administrador_nome ?? 'Administrador'} ·{' '}
-            {formatDateTime(refund.realizado_em)}
-          </p>
+          <AuditEventAccordion title={<>Reembolso manual: {formatCents(refund.valor_centavos)} via {formatLabel(refund.metodo)}</>} metadata={<>{refund.administrador_nome ?? 'Administrador'} · {formatDateTime(refund.realizado_em)}</>}>
           <p className="mt-1 font-mono text-xs">Referência: {refund.referencia}</p>
           <p className="mt-2 text-xs">{refund.observacao}</p>
           <p className="mt-2 text-xs font-semibold">
             Status do provedor preservado no registro: {refund.status_pagamento_no_registro}
           </p>
+          </AuditEventAccordion>
         </div>
       )}
     </section>
@@ -473,7 +466,7 @@ export default async function SolicitacaoDetailPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <div className="mb-6">
           <Link
@@ -844,16 +837,13 @@ export default async function SolicitacaoDetailPage({
                       timelineToneColors[event.tone]
                     }`}
                   />
-                  <div>
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {event.title}
-                    </p>
-                    <p className="text-xs text-zinc-400">{formatDateTime(event.date)}</p>
-                    {event.description && (
-                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                        {event.description}
-                      </p>
-                    )}
+                  <div className="min-w-0 flex-1">
+                    {event.description ? <AuditEventAccordion title={event.title} metadata={formatDateTime(event.date)}>
+                      <p className="whitespace-pre-wrap">{event.description}</p>
+                    </AuditEventAccordion> : <div className="rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{event.title}</p>
+                      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{formatDateTime(event.date)}</p>
+                    </div>}
                   </div>
                 </li>
               ))}
@@ -861,6 +851,6 @@ export default async function SolicitacaoDetailPage({
           )}
         </section>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

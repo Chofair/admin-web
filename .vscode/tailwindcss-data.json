@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vscode-css-languageservice/main/docs/customData.schema.json",
+  "version": 1.1,
+  "atDirectives": [
+    {
+      "name": "@custom-variant",
+      "description": "Define uma variante personalizada do Tailwind CSS 4, como o tema escuro por classe.",
+      "references": [
+        { "name": "Tailwind CSS: @custom-variant", "url": "https://tailwindcss.com/docs/functions-and-directives#custom-variant" }
+      ]
+    },
+    {
+      "name": "@theme",
+      "description": "Define variáveis de tema usadas pelo Tailwind CSS 4 para gerar as classes utilitárias.",
+      "references": [
+        { "name": "Tailwind CSS: @theme", "url": "https://tailwindcss.com/docs/functions-and-directives#theme" }
+      ]
+    }
+  ]
+}

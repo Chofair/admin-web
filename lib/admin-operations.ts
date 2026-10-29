@@ -429,11 +429,13 @@ export async function listAdminRequests(
   return parseAdminList<AdminRequestListItem>(data);
 }
 
-export async function countAdminRequests(
-  supabase: SupabaseServerClient,
-  statuses?: AdminRequestStatus[],
-) {
-  return (await listAdminRequests(supabase, { statuses, limit: 1 })).total;
+export async function getAdminRequestSummary(supabase: SupabaseServerClient) {
+  const { data, error } = await supabase.rpc('admin_resumo_solicitacoes');
+  if (error || !isRecord(data)) {
+    console.error('Falha ao consultar resumo de solicitações', { code: error?.code });
+    throw new Error('Não foi possível carregar o resumo de solicitações.');
+  }
+  return { total: Number(data.total ?? 0), pending: Number(data.pending ?? 0), active: Number(data.active ?? 0) };
 }
 
 export async function listAdminPayouts(

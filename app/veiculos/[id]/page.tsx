@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import AuditEventAccordion from '@/components/AuditEventAccordion';
 import { getAdminVehicle } from '@/lib/admin-driver-vehicles';
 import { getAdminProfilesByIds } from '@/lib/admin-profiles';
 import { requireAdmin } from '@/lib/auth';
@@ -170,7 +171,7 @@ export default async function VehicleDetailPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <Link href="/veiculos" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
           ← Validação de veículos
@@ -379,15 +380,17 @@ export default async function VehicleDetailPage({
 
             <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
               <h2 className="mb-3 font-semibold text-zinc-800 dark:text-zinc-200">Auditoria</h2>
+              <AuditEventAccordion title="Registro de validação" metadata={vehicle.validado_em ? formatDateTime(vehicle.validado_em) : 'Ainda não validado'}>
               <dl className="space-y-3 text-sm">
                 <div><dt className="text-zinc-500">CRLV-e enviado em</dt><dd>{formatDateTime(vehicle.crlv_uploaded_at)}</dd></div>
                 <div><dt className="text-zinc-500">Validado por</dt><dd>{reviewer?.name ?? '-'}</dd></div>
                 <div><dt className="text-zinc-500">Validado em</dt><dd>{formatDateTime(vehicle.validado_em)}</dd></div>
               </dl>
+              </AuditEventAccordion>
             </section>
           </aside>
         </div>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

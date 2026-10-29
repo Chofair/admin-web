@@ -1,6 +1,27 @@
 @import "tailwindcss";
 
+/* Diretivas do Tailwind 4, registradas para o editor em .vscode/tailwindcss-data.json. */
 @custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  button:enabled,
+  summary,
+  [role='button']:not([aria-disabled='true']),
+  select:enabled,
+  input[type='checkbox']:enabled,
+  input[type='radio']:enabled,
+  input[type='file']:enabled,
+  input[type='file']:enabled::file-selector-button {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
 
 :root {
   --background: #ffffff;
