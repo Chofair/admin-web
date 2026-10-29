@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, Clock3, ReceiptText } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import AuditEventAccordion from '@/components/AuditEventAccordion';
 import { requireAdmin } from '@/lib/auth';
 import { formatAdminDateTime as formatDateTime } from '@/lib/admin-format';
 import {
@@ -247,15 +248,9 @@ export default async function RideReviewsPage({
 
                 {review.revisao_status === 'resolvida' && (
                   <div className="mt-5 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700">
-                    <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                      {review.decisao === 'isentar_excedente_cliente'
-                        ? 'Excedente isentado'
-                        : 'Cobrança mantida'}
-                    </p>
-                    <p className="mt-1 text-zinc-500 dark:text-zinc-400">
-                      {review.observacao_admin} · {review.revisor_nome ?? 'Administrador'} em{' '}
-                      {formatDateTime(review.resolvida_em)}
-                    </p>
+                    <AuditEventAccordion title={review.decisao === 'isentar_excedente_cliente' ? 'Excedente isentado' : 'Cobrança mantida'} metadata={<>{review.revisor_nome ?? 'Administrador'} · {formatDateTime(review.resolvida_em)}</>}>
+                      <p className="whitespace-pre-wrap">{review.observacao_admin ?? 'Nenhuma observação adicional registrada.'}</p>
+                    </AuditEventAccordion>
                   </div>
                 )}
               </article>

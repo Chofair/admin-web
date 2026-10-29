@@ -8,6 +8,7 @@ import {
 } from '@/lib/maps-monitoring';
 import { AcknowledgeAlertButton } from './AcknowledgeAlertButton';
 import { formatNumber } from './view-helpers';
+import AuditEventAccordion from '@/components/AuditEventAccordion';
 
 export function AlertsPanel({
   alerts,
@@ -59,15 +60,9 @@ export function AlertsPanel({
                 key={alert.id}
                 className={`flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${tone}`}
               >
-                <div>
-                  <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {config?.sku_name ?? alert.config_key} ·{' '}
-                    {alert.threshold_percentage}%
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
-                    {formatNumber(alert.usage_count)} eventos ao gerar o alerta ·{' '}
-                    {formatAdminDateTime(alert.created_at)}
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <AuditEventAccordion title={<>{config?.sku_name ?? alert.config_key} · {alert.threshold_percentage}%</>} metadata={formatAdminDateTime(alert.created_at)}>
+                  <p>{formatNumber(alert.usage_count)} eventos ao gerar o alerta</p>
                   {alert.acknowledged_at && (
                     <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">
                       <CheckCircle2 size={14} />
@@ -78,6 +73,7 @@ export function AlertsPanel({
                       em {formatAdminDateTime(alert.acknowledged_at)}
                     </p>
                   )}
+                  </AuditEventAccordion>
                 </div>
                 {alert.acknowledged_at ? (
                   <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 sm:self-center dark:bg-emerald-900 dark:text-emerald-200">
