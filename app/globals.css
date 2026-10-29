@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Diretivas do Tailwind 4, registradas para o editor em .vscode/tailwindcss-data.json. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
