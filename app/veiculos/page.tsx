@@ -114,7 +114,7 @@ export default async function VehiclesPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
@@ -255,6 +255,6 @@ export default async function VehiclesPage({
           </nav>
         )}
       </main>
-    </div>
+    </NavBar></div>
   );
 }

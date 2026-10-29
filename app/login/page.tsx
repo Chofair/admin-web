@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { ArrowLeft, ArrowRight, LoaderCircle } from 'lucide-react';
+import appIcon from '@/public/brand/chofair-icon.png';
 import { supabase } from '@/lib/supabase';
-import { Suspense } from 'react';
+import styles from './login.module.css';
 
 const loginErrorMessages: Record<string, string> = {
   acesso_negado: 'Você não tem permissão de acesso ao painel admin.',
@@ -65,69 +68,76 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#0058A3]">Chofair</h1>
-          <p className="text-slate-400 mt-1 text-sm">Painel Administrativo</p>
+    <section className={styles.card} aria-labelledby="login-title">
+        <div className={styles.intro}>
+          <h1 id="login-title">Acesse o painel</h1>
+          <p>Entre com sua conta administrativa.</p>
         </div>
 
-        <form onSubmit={handleLogin} className="bg-slate-800 rounded-2xl p-8 shadow-xl space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+        <form onSubmit={handleLogin} className={styles.form} aria-busy={loading}>
+          <div className={styles.field}>
+            <label htmlFor="login-email">E-mail</label>
             <input
+              id="login-email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0058A3] focus:border-transparent"
-              placeholder="admin@chofair.com"
+              autoCapitalize="none"
+              spellCheck={false}
+              disabled={loading}
+              placeholder="seuemail@empresa.com.br"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Senha</label>
+          <div className={styles.field}>
+            <label htmlFor="login-password">Senha</label>
             <input
+              id="login-password"
+              name="password"
               type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0058A3] focus:border-transparent"
+              disabled={loading}
               placeholder="••••••••"
             />
           </div>
 
           {erro && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
-              <p className="text-red-400 text-sm">{erro}</p>
+            <div role="alert" className={styles.error}>
+              <p>{erro}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#0058A3] hover:bg-[#0069C0] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-colors"
+            className={styles.submit}
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? <><LoaderCircle size={18} aria-hidden="true" className="motion-safe:animate-spin" />Entrando...</> : <>Entrar <ArrowRight size={18} aria-hidden="true" /></>}
           </button>
         </form>
-        <Link
-          href="/"
-          className="mt-6 block text-center text-sm text-slate-400 transition-colors hover:text-white"
-        >
-          ← Voltar ao site
-        </Link>
-      </div>
-    </div>
+    </section>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
+    <main className={styles.page}>
+      <div className={styles.content}>
+        <Link href="/" className={styles.brand} aria-label="Chofair — voltar ao site">
+          <Image src={appIcon} alt="" width={60} height={60} sizes="60px" className={styles.logo} />
+          <span><strong>Chofair</strong><span>Painel administrativo</span><span className={styles.yellowRule} aria-hidden="true" /></span>
+        </Link>
+        <Suspense fallback={<div className={styles.card} role="status">Carregando formulário de acesso...</div>}>
+          <LoginForm />
+        </Suspense>
+        <Link href="/" className={styles.back}><ArrowLeft size={17} aria-hidden="true" />Voltar ao site</Link>
+      </div>
+    </main>
   );
 }

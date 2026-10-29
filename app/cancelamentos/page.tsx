@@ -20,7 +20,7 @@ export default async function Cancellations({ searchParams }: { searchParams: Pr
     ? await supabase.rpc('obter_cancelamento_v2', { solicitacao_id_input: id })
     : await supabase.rpc('admin_listar_cancelamentos_v2', { limite_input: 40, antes_de_input: cursor, situacao_input: status });
   const cases: CancellationCase[] = error ? [] : id ? (data ? [data] : []) : (data ?? []);
-  return <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"><NavBar />
+  return <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"><NavBar>
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div><p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400"><ClipboardList size={17} /> Gestão de cancelamentos</p>
@@ -85,5 +85,5 @@ export default async function Cancellations({ searchParams }: { searchParams: Pr
       })}
       {!id && <div className="flex flex-wrap justify-between gap-3">{cursor ? <Link className={button} href={`/cancelamentos?status=${status}`}>Voltar aos mais recentes</Link> : <span />}{cases.length === 40 && <Link className={button} href={`/cancelamentos?status=${status}&cursor=${encodeURIComponent(cases[cases.length-1].solicitada_em)}`}>Carregar mais antigos <ArrowRight size={16} /></Link>}</div>}
     </main>
-  </div>;
+  </NavBar></div>;
 }

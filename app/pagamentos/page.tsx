@@ -128,7 +128,7 @@ export default async function PagamentosPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -389,6 +389,6 @@ export default async function PagamentosPage({
         </div>
 
       </main>
-    </div>
+    </NavBar></div>
   );
 }

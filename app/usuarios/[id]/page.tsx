@@ -47,20 +47,20 @@ export default async function UsuarioDetailPage({
   if (!profile) {
     return (
       <div className="min-h-screen bg-zinc-50">
-        <NavBar />
+        <NavBar>
         <main className="max-w-7xl mx-auto px-6 py-10">
           <p className="text-zinc-500">Usuário não encontrado.</p>
           <Link href="/usuarios" className="text-blue-600 hover:underline mt-4 inline-block">
             Voltar
           </Link>
         </main>
-      </div>
+      </NavBar></div>
     );
   }
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      <NavBar />
+      <NavBar>
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="flex items-center gap-3 mb-6">
           <Link href="/usuarios" className="text-zinc-500 hover:text-zinc-900 text-sm">
@@ -155,6 +155,6 @@ export default async function UsuarioDetailPage({
           </table>
         </div>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

@@ -35,7 +35,7 @@ export default async function AccessibilityDetailPage({ params }: { params: Prom
   const application = detail.driver_application;
   const cnhUrl = safeImageUrl(driver.cnh_foto_url);
   const status = String(application.status);
-  return <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950"><NavBar /><main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+  return <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950"><NavBar><main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
     <Link href="/acessibilidade" className="text-sm text-zinc-500 hover:text-zinc-900">← Fila de acessibilidade</Link>
     <div className="my-5"><h1 className="text-2xl font-bold">{text(driver.name)}</h1><p className="text-sm text-zinc-500">CPF {text(driver.cpf)} · CNH {text(driver.cnh_numero)} · validade {text(driver.cnh_validade)}</p></div>
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.7fr)]"><div className="space-y-6">
@@ -62,5 +62,5 @@ export default async function AccessibilityDetailPage({ params }: { params: Prom
       {application.rejection_reason ? <section className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"><h2 className="mb-2 font-semibold">Motivo atual</h2>{text(application.rejection_reason)}</section> : null}
       <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900"><h2 className="mb-4 font-semibold">Auditoria</h2><ol className="space-y-4">{detail.events.map((event, index) => <li key={String(event.id ?? index)} className="border-l-2 border-zinc-200 pl-3 text-sm dark:border-zinc-700"><p className="font-medium">{text(event.event_type)}: {text(event.previous_status)} → {text(event.new_status)}</p><p className="text-xs text-zinc-500">{date(event.created_at)} · {text(event.actor_role)}</p>{event.reason ? <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">{text(event.reason)}</p> : null}</li>)}</ol></section>
     </aside></div>
-  </main></div>;
+  </main></NavBar></div>;
 }

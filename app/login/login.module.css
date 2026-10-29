@@ -1,0 +1,52 @@
+.page {
+  --brand-blue: #0058a3;
+  --brand-yellow: #ffc845;
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  padding: 40px 20px;
+  background:
+    radial-gradient(ellipse at 12% 5%, rgb(0 88 163 / 65%), transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgb(0 88 163 / 28%), transparent 50%),
+    #081d36;
+  color: #0b2342;
+  color-scheme: light;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+.content { width: 100%; max-width: 440px; }
+.brand { display: flex; width: fit-content; align-items: center; gap: 14px; margin: 0 auto 30px; border-radius: 12px; color: #fff; text-decoration: none; }
+.logo { display: block; width: 60px; height: 60px; flex-shrink: 0; border: 1px solid rgb(255 255 255 / 15%); border-radius: 16px; }
+.brand > span { display: grid; gap: 5px; }
+.brand strong { font-size: 32px; font-weight: 750; letter-spacing: -1px; line-height: 1.1; }
+.brand > span > span { color: #d5e4f3; font-size: 13px; line-height: 1.5; }
+.card { padding: 36px; border: 1px solid #dce6ef; border-radius: 20px; background: #fff; box-shadow: 0 24px 64px rgb(0 0 0 / 20%); }
+.intro { margin-bottom: 28px; }
+.brand > span > .yellowRule { display: block; width: 36px; height: 3px; margin-top: 3px; border-radius: 2px; background: var(--brand-yellow); }
+.intro h1 { margin: 0; font-size: 27px; line-height: 1.25; font-weight: 720; letter-spacing: -.8px; }
+.intro p { margin: 10px 0 0; color: #52627a; font-size: 14px; line-height: 1.6; }
+.form { display: grid; gap: 22px; }
+.field { display: grid; gap: 8px; min-width: 0; }
+.field label { font-size: 14px; font-weight: 600; line-height: 1.5; }
+.field input { width: 100%; min-width: 0; min-height: 48px; padding: 12px 14px; border: 1px solid #aabbd0; border-radius: 9px; background: #f8fafd; color: #0b2342; font: inherit; font-size: 16px; line-height: 1.5; transition: border-color 150ms ease, background-color 150ms ease; }
+.field input::placeholder { color: #64748b; opacity: 1; }
+.field input:focus { outline: 3px solid rgb(0 88 163 / 18%); outline-offset: 1px; border-color: var(--brand-blue); background: #fff; }
+.field input:disabled { opacity: .65; }
+.submit { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 12px 18px; border: 1px solid var(--brand-blue); border-radius: 9px; background: var(--brand-blue); color: #fff; font-size: 15px; font-weight: 650; line-height: 1.5; transition: background-color 150ms ease; }
+.submit:hover:enabled { background: #06447d; }
+.submit:active:enabled { background: #063563; }
+.submit:disabled { opacity: .65; }
+.error { padding: 12px 14px; border: 1px solid #fecaca; border-radius: 9px; background: #fef2f2; color: #991b1b; overflow-wrap: anywhere; }
+.error p { margin: 0; font-size: 14px; line-height: 1.6; }
+.back { display: flex; align-items: center; justify-content: center; gap: 9px; width: fit-content; min-height: 44px; margin: 20px auto 0; padding: 8px; border-radius: 7px; color: #d5e4f3; font-size: 14px; text-decoration: none; }
+.back:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+.page :is(a, button):focus-visible { outline: 3px solid var(--brand-yellow); outline-offset: 5px; }
+.card button:focus-visible { outline-color: var(--brand-blue); }
+@media (max-width: 480px) {
+  .page { padding: 28px 20px; }
+  .brand { margin-bottom: 24px; }
+  .card { padding: 28px 24px; }
+  .intro h1 { font-size: 25px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page :is(input, button) { transition: none; }
+}

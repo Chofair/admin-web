@@ -156,7 +156,7 @@ export default async function Dashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
         <h1 className="mb-6 text-xl font-semibold text-zinc-800 dark:text-zinc-200">
@@ -271,6 +271,6 @@ export default async function Dashboard() {
           </div>
         </section>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

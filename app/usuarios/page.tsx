@@ -57,7 +57,7 @@ export default async function UsuariosPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="max-w-7xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -138,6 +138,6 @@ export default async function UsuariosPage({
           </nav>
         )}
       </main>
-    </div>
+    </NavBar></div>
   );
 }

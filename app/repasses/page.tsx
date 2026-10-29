@@ -93,7 +93,7 @@ export default async function RepassesPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -224,6 +224,6 @@ export default async function RepassesPage({
           </table>
         </div>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

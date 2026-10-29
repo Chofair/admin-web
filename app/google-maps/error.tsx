@@ -17,7 +17,7 @@ export default function GoogleMapsError({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="mx-auto flex max-w-7xl justify-center px-4 py-16 sm:px-6">
         <div className="w-full max-w-xl rounded-xl border border-red-200 bg-white p-8 text-center dark:border-red-900 dark:bg-zinc-900">
           <AlertTriangle className="mx-auto text-red-500" size={34} />
@@ -38,6 +38,6 @@ export default function GoogleMapsError({
           </button>
         </div>
       </main>
-    </div>
+    </NavBar></div>
   );
 }

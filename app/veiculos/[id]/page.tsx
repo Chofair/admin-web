@@ -170,7 +170,7 @@ export default async function VehicleDetailPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <NavBar />
+      <NavBar>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <Link href="/veiculos" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
           ← Validação de veículos
@@ -388,6 +388,6 @@ export default async function VehicleDetailPage({
           </aside>
         </div>
       </main>
-    </div>
+    </NavBar></div>
   );
 }
