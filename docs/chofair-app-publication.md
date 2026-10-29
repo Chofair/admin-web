@@ -73,3 +73,11 @@ Nesse complemento, subir as migrations `20261029130000_bounded_cancellation_reco
 A segunda migration financeira remove a espera inicial para reembolsos de pagamentos já conhecidos, prioriza essas tarefas e mantém os casos concluídos fora da expiração do acompanhamento. Não cria nem altera agendamentos e não exige republicar as Edge Functions já atualizadas. A alteração está aplicada no staging e em produção.
 
 O processamento novo fica desativado por padrão na migration. Depois de publicar e testar as duas funções no projeto correto, ativar apenas o ambiente aprovado no controle do banco. O staging mantém apenas `sandbox` ativo; a promoção de 29/10/2026 ativou apenas `production` no projeto de produção, mantendo `sandbox` desativado nele. Nenhum cron, secret, seed ou dado de teste foi copiado entre os ambientes. Conferir a divergência de histórico descrita acima antes de qualquer promoção geral. Detalhes e parâmetros estão no [guia de conciliação](cancellation-reconciliation-plan.md).
+
+## Ajustes posteriores de agendamento
+
+A migration `20261029150000_deduplicate_payment_reconciliation_schedule.sql`, no ChofairApp, já foi aplicada no staging e em produção. Mantém o cron autenticado de conciliação a cada dez minutos e remove o duplicado de seis horas quando presente, preservando comando, owner, banco e estado ativo.
+
+A migration `20261029160000_schedule_automatic_refunds_every_five_minutes.sql`, também no ChofairApp, foi preparada e testada com rollback, mas não aplicada nesta etapa. Ela altera somente o intervalo do cron `chofair-reembolsos-automaticos` para cinco minutos; até a publicação, permanece o intervalo de um minuto. O cron separado de cancelamento de corridas expiradas continua a cada minuto.
+
+Esses ajustes acrescentam duas migrations ao código da entrega original de nove. Não exigem republicar Edge Functions, alterar secrets ou gerar versão móvel. Revisar o dry-run para não incluir migrations de outras entregas ao publicar a nova frequência. A migration de reembolsos permanece na branch da PR do ChofairApp; os documentos são integrados à master do admin-web.

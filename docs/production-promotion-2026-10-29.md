@@ -58,3 +58,19 @@ Não há atualização de telas móveis nem necessidade de publicar Android/iOS.
 As mudanças têm efeitos intencionais no backend: correções administrativas passam a aparecer no cadastro ao recarregar os dados; corrigir o e-mail pelo painel muda o endereço utilizado no login e na recuperação de senha, mantendo ID e senha; CNHs substituídas ficam privadas e o motorista aprovado continua sem poder alterá-las pelo app; a exclusão passa a limpar também esses documentos e sua auditoria; cancelamentos e devoluções passam pelo processamento limitado e pelo webhook atualizado.
 
 Pagamentos confirmados cancelados sem aceite no T−15 continuam elegíveis ao reembolso integral automático. Resultado desconhecido não é tratado como ausência de cobrança, e devolução só é concluída com evidência do provedor. Cancelamentos por ausência de início registrado continuam exigindo avaliação operacional quando aplicável.
+
+## Ajustes posteriores dos agendamentos
+
+Após a promoção descrita acima, os dois crons de conciliação foram comparados: chamavam a mesma Edge Function `reconciliar-pagamentos-pendentes`, que não usa o corpo da requisição para selecionar outro fluxo. Ambos usavam autenticação via Vault. O cron de seis horas foi considerado redundante.
+
+A migration `20261029150000_deduplicate_payment_reconciliation_schedule.sql` foi testada com rollback e aplicada no staging e em produção. Ela removeu o duplicado em produção e alterou o principal para dez minutos. Foram conferidos o comando original, a autenticação, o estado ativo e os outros jobs, preservados. Os dois ambientes passaram a ter nove agendamentos ativos.
+
+A migration `20261029160000_schedule_automatic_refunds_every_five_minutes.sql` foi preparada no ChofairApp, validada com rollback e mantida na branch atual da PR para publicação pelo responsável. O teste conferiu repetição segura e alteração exclusiva do intervalo do job de reembolsos. Nenhuma alteração persistente dessa nova migration foi feita nos bancos nesta etapa.
+
+| Rotina | Configuração aplicada nos dois ambientes | Próxima alteração preparada |
+| --- | --- | --- |
+| Cancelamento de corridas expiradas | A cada minuto | Nenhuma |
+| Conciliação de pagamentos pendentes | A cada dez minutos | Nenhuma |
+| Processamento automático de reembolsos | A cada minuto | A cada cinco minutos, após aplicar `20261029160000` |
+
+A troca de frequência não altera elegibilidade, prioridade, limites de chamadas, chave de idempotência ou webhook. O executor continua selecionando até três tarefas por rodada; diminuir a frequência reduz as execuções previstas e pode aumentar a espera em uma fila maior. Não foi necessário publicar funções ou versão do aplicativo para preparar esse ajuste.

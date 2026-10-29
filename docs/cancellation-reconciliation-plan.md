@@ -13,7 +13,13 @@ Corrigir as tentativas de cartão com resultado desconhecido que deixam de ser c
 
 **Pagamento `PAID` cancelado sem aceite no T−15 tem reembolso integral automático.** Ele entra como tarefa de reembolso na próxima execução do worker já existente, sem a espera inicial de cinco minutos das cobranças incertas. O executor consulta o provedor para evitar devolução duplicada e confirmar o resultado; confirmado o reembolso, o caso sai do trabalho pendente e não volta a ser consultado por envelhecimento dos controles.
 
-Não foi criado cron para acompanhar o painel. Foram reutilizados os agendamentos existentes: `cancelar-corridas-expiradas` e `chofair-reembolsos-automaticos` a cada minuto, e `chofair-reconciliar-pagamentos-pendentes` a cada cinco minutos. As frequências foram preservadas. Os novos controles acrescentam operações de reserva/limitação por tentativa, mas não novos agendamentos. Quando não há trabalho elegível, o executor retorna após a verificação de pendências, sem percorrer a manutenção das reservas nem consultar o provedor.
+Não foi criado cron para acompanhar o painel. A implantação inicial reutilizou os agendamentos existentes e preservou suas frequências. Posteriormente, a migration `20261029150000_deduplicate_payment_reconciliation_schedule.sql` passou a conciliação de pagamentos pendentes para dez minutos e removeu o cron redundante de seis horas em produção; esse ajuste já está aplicado nos dois ambientes.
+
+A migration seguinte, `20261029160000_schedule_automatic_refunds_every_five_minutes.sql`, prepara o processamento de reembolsos a cada cinco minutos. Ela foi testada com rollback e permanece pendente de publicação; até sua aplicação, o cron de reembolsos continua a cada minuto. O cancelamento de corridas expiradas mantém seu agendamento separado a cada minuto.
+
+O executor de cancelamentos e reembolsos seleciona até três tarefas elegíveis por execução. O intervalo do cron define quando procura trabalho; cada tarefa também respeita seu próximo horário, suas reservas e seu orçamento. A passagem de um para cinco minutos reduz os disparos previstos de 1.440 para 288 por dia, sem representar uma redução proporcional garantida do consumo total do banco ou do provedor. Em fila maior, a capacidade por rodada pode aumentar a espera e deve ser acompanhada.
+
+Os novos controles acrescentam operações de reserva/limitação por tentativa. Quando não há trabalho elegível, o executor retorna após a verificação de pendências, sem percorrer a manutenção das reservas nem consultar o provedor. A prioridade atende reembolsos de pagamentos confirmados antes da investigação de cobranças incertas, sem restringi-la ao motivo T−15. As regras de aprovação, suspensão, confirmação pelo provedor e idempotência permanecem as mesmas.
 
 ## 1. Uma política compartilhada de consultas
 
