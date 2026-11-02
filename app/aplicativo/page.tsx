@@ -4,6 +4,7 @@ import LandingHeader from '@/components/LandingHeader';
 import BrandLogo from '@/components/marketing/BrandLogo';
 import BackToHome from '@/components/marketing/BackToHome';
 import ContactSection from '@/components/marketing/ContactSection';
+import RegistroDeVisita from '@/components/marketing/RegistroDeVisita';
 import ServiceList from '@/components/marketing/ServiceList';
 import SiteFooter from '@/components/marketing/SiteFooter';
 import StoreButtons from '@/components/marketing/StoreButtons';
@@ -25,6 +26,7 @@ const steps = [
 export default function AplicativoPage() {
   return (
     <div className={styles.site}>
+      <RegistroDeVisita />
       <LandingHeader />
       <main id="conteudo" className={styles.main} tabIndex={-1}>
         <section className={styles.appSection} aria-labelledby="app-title">
