@@ -43,3 +43,18 @@
   .brand > span > span { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { .link { transition: none; } }
+
+/* Feedback keeps labels readable in both themes and blocks duplicate logout. */
+.iconButton { transition: background-color 150ms ease, color 150ms ease; }
+.iconButton:active { background: #e4e4e7; color: #18181b; }
+.logoutButton { width: auto; min-width: 44px; gap: 8px; padding-inline: 12px; }
+.logoutLabel { font-size: 14px; font-weight: 500; white-space: nowrap; }
+.logoutButton:disabled { cursor: wait; background: #f4f4f5; color: #52525b; }
+:global(.dark) .iconButton:active { background: #3f3f46; color: #fafafa; }
+:global(.dark) .logoutButton:disabled { background: #27272a; color: #d4d4d8; }
+@media (max-width: 1023px) {
+  .logoutButton { width: 44px; padding-inline: 0; }
+  .logoutLabel { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) { .iconButton { transition: none; } }
