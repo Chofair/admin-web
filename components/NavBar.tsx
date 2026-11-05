@@ -20,7 +20,7 @@ import {
   Moon,
   ListChecks,
   BadgeDollarSign,
-  LogOut,
+  Activity,
   HandCoins,
   Accessibility,
   MapPin,
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { logout } from '@/app/auth/actions';
+import LogoutButton from './LogoutButton';
 
 const links = [
   { href: '/admin', label: 'Dashboard', Icon: LayoutDashboard },
@@ -44,6 +45,7 @@ const links = [
   { href: '/pagamentos', label: 'Pagamentos', Icon: CreditCard },
   { href: '/repasses', label: 'Repasses', Icon: HandCoins },
   { href: '/cidades', label: 'Cidades', Icon: MapPin },
+  { href: '/cidades/demanda', label: 'Ocorrências de cadastro', Icon: Activity },
   { href: '/google-maps', label: 'Google Maps', Icon: MapPinned },
   { href: '/aplicativo', label: 'Aplicativo', Icon: Smartphone },
 ];
@@ -65,9 +67,12 @@ export default function NavBar({ children }: { children: ReactNode }) {
     return () => desktop.removeEventListener('change', closeMobileMenu);
   }, []);
 
+  const activeHref = links.reduce((active, { href }) =>
+    (pathname === href || pathname.startsWith(href + '/')) && href.length > active.length ? href : active, '');
+
   const navigation = (mobile = false) => <nav aria-label="Navegação principal" className={styles.navigation}>
     {links.map(({ href, label, Icon }) => {
-      const isActive = pathname === href || pathname.startsWith(href + '/');
+      const isActive = activeHref === href;
       return <Link key={href} href={href} aria-current={isActive ? 'page' : undefined}
         onClick={mobile ? () => dialog.current?.close() : undefined}
         className={styles.link + (isActive ? ' ' + styles.active : '')}>
@@ -87,9 +92,7 @@ export default function NavBar({ children }: { children: ReactNode }) {
         <button onClick={toggle} aria-label="Alternar tema" className={styles.iconButton}>
           {theme === 'dark' ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
         </button>
-        <form action={logout}><button type="submit" aria-label="Sair do painel" title="Sair do painel" className={styles.iconButton}>
-          <LogOut size={19} aria-hidden="true" />
-        </button></form>
+        <form action={logout}><LogoutButton /></form>
         <button type="button" aria-label="Abrir menu de navegação" aria-expanded={menuOpen} aria-controls="admin-mobile-menu"
           className={styles.iconButton + ' ' + styles.menuButton}
           onClick={() => { dialog.current?.showModal(); setMenuOpen(true); }}><Menu size={21} aria-hidden="true" /></button>

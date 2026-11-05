@@ -68,3 +68,48 @@ As Edge Functions atuais ainda rotulam o consumo do staging como `production`.
 Por isso, o arquivo local mantém esse filtro para preservar os dados existentes:
 ele consulta somente o banco de staging, não o de produção. Uma futura mudança
 de classificação deve alinhar produtor, dados históricos e filtro do painel.
+
+### Ocorrências de cadastro (CHO-587)
+
+Acesse **Ocorrências de cadastro** no menu lateral (`/cidades/demanda`). A tela separa
+cadastro concluído fora da cobertura, recusa por cidade, recusa por modalidade
+e falha técnica reportada. Cadastro sem cobertura é interesse, não erro.
+Filtros por período, cidade/UF, categoria, papel e modalidade; até 30 cidades
+no resumo e 50 ocorrências por página. Os horários usam Brasília.
+
+Depende da migration `20261104140000_coverage_demand_monitoring.sql` no projeto
+ChofairApp e da versão do aplicativo com as RPCs monitoradas. Implantar o banco
+antes de publicar a tela e o app. A migration urgente anterior de liberação do
+cadastro é independente e já foi aplicada em staging e produção.
+
+A leitura exige administrador no servidor e no banco. O histórico grava cidade,
+UF, papel, momento, modalidade, código limitado e ID da conta; não copia e-mail,
+CPF, telefone ou mensagem bruta de erro. A exclusão da conta remove seu vínculo.
+Retenção de 30 dias com limpeza automática diária, consulta dos últimos 30 dias,
+paginação por data/ID e limite de
+100 registros diários por conta. Repetir a conclusão do cadastro não duplica
+interesse na mesma cidade. Não há polling, push nem envio de e-mail.
+
+Os registros começam nos fluxos monitorados do app atualizado; recusas antigas,
+falhas sem sessão e eventos que não chegam ao servidor não são reconstruídos.
+Os contadores refletem esse histórico limitado, não um censo de todas as falhas.
+
+Validação: `npm run test:demand` usa TypeScript e o runner nativo do Node, sem
+dependência nova. Execute também `npm run lint` e `npm run build`. As regressões
+SQL/RLS ficam em `supabase/tests/coverage_demand_monitoring_test.sql` no ChofairApp
+e rodam no banco descartável da CI, nunca nos bancos de clientes.
+
+### Feedback de navegação e saída do painel
+
+O menu lateral oferece acesso direto a **Ocorrências de cadastro**. Apenas a rota
+mais específica fica marcada como atual, sem selecionar Cidades ao mesmo tempo.
+Cidades e Ocorrências são abas independentes: não há atalhos entre as páginas.
+A rota técnica foi mantida para preservar os filtros e links existentes.
+Foi preservado o feedback de navegação do menu.
+
+O botão Sair usa o estado real de envio do formulário (useFormStatus, já incluído
+no React DOM): mostra carregamento, impede cliques repetidos e anuncia o estado
+ao leitor de tela. Em telas menores mantém apenas o ícone para evitar apertar o
+cabeçalho. A ação de logout e a remoção dos cookies não foram alteradas.
+Validação manual: testar hover/clique nos dois temas, abrir o histórico pelo
+menu e observar o indicador ao sair, inclusive com rede lenta.
