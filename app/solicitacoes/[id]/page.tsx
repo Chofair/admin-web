@@ -31,6 +31,13 @@ import {
 } from '@/lib/request-financials';
 
 type RequestRow = {
+  duracao_contratada_minutos?: number | null;
+  preco_percurso_adicional?: number | null;
+  precificacao_v2?: {
+    classification: 'curta' | 'longa'; serviceDate: string;
+    tariff: { nome: string }; reservedMinutes: number;
+    price: { fixedCents: number; kilometerCents: number; timeCents: number; waitCents: number; minimumAdjustmentCents: number; distanceMeters: number };
+  } | null;
   id: string;
   usuario_id: string;
   motorista_id: string | null;
@@ -527,7 +534,7 @@ export default async function SolicitacaoDetailPage({
               <div>
                 <dt className="text-zinc-500">Janela contratada</dt>
                 <dd className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">
-                  {request.horario_inicio} – {request.horario_fim} · {request.duracao_horas}h
+                  {request.horario_inicio} – {request.horario_fim} · {request.duracao_contratada_minutos != null ? `${request.duracao_contratada_minutos} min` : `${request.duracao_horas}h`}
                 </dd>
               </div>
               <div>
@@ -562,12 +569,20 @@ export default async function SolicitacaoDetailPage({
               Composição financeira
             </h2>
             <dl className="space-y-3 text-sm">
-              <div className="flex justify-between gap-4">
+              {request.precificacao_v2 && <>
+                <div className="flex justify-between gap-4"><dt className="text-zinc-500">Tarifa contratada</dt><dd>{request.precificacao_v2.tariff.nome} · {request.precificacao_v2.classification === 'curta' ? 'Curta' : 'Longa'}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-zinc-500">Data tarifária</dt><dd>{formatDate(request.precificacao_v2.serviceDate)}</dd></div>
+                {request.precificacao_v2.price.fixedCents + request.precificacao_v2.price.timeCents + request.precificacao_v2.price.minimumAdjustmentCents > 0 && <div className="flex justify-between gap-4"><dt className="text-zinc-500">Serviço e valor mínimo</dt><dd>{formatCents(request.precificacao_v2.price.fixedCents + request.precificacao_v2.price.timeCents + request.precificacao_v2.price.minimumAdjustmentCents)}</dd></div>}
+                <div className="flex justify-between gap-4"><dt className="text-zinc-500">Percurso financeiro ({(request.precificacao_v2.price.distanceMeters / 1000).toLocaleString('pt-BR')} km)</dt><dd>{formatCents(request.precificacao_v2.price.kilometerCents)}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-zinc-500">Permanência reservada ({request.precificacao_v2.reservedMinutes} min)</dt><dd>{formatCents(request.precificacao_v2.price.waitCents)}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-zinc-500">Repasse do serviço</dt><dd>92% · sem processamento do cartão</dd></div>
+              </>}
+              {(!request.precificacao_v2 || request.precificacao_v2.classification === 'longa') && <div className="flex justify-between gap-4">
                 <dt className="text-zinc-500">Taxa por hora</dt>
                 <dd className="font-medium text-zinc-900 dark:text-zinc-100">
                   {formatCurrency(request.taxa_por_hora)}
                 </dd>
-              </div>
+              </div>}
               <div className="flex justify-between gap-4">
                 <dt className="text-zinc-500">Cobrança inicial</dt>
                 <dd className="font-semibold text-zinc-900 dark:text-zinc-100">
@@ -575,11 +590,12 @@ export default async function SolicitacaoDetailPage({
                 </dd>
               </div>
               <div className="flex justify-between gap-4 text-orange-700 dark:text-orange-400">
-                <dt>Excedente ({request.tempo_excedido_minutos ?? 0} min)</dt>
+                <dt>{request.precificacao_v2 ? `Adicional de tempo (${request.tempo_excedido_minutos ?? 0} min)` : `Excedente (${request.tempo_excedido_minutos ?? 0} min)`}</dt>
                 <dd className="font-semibold">
-                  {formatCurrency(request.preco_tempo_excedido)}
+                  {formatCurrency(request.precificacao_v2 ? Math.max(0, (request.preco_tempo_excedido ?? 0) - (request.preco_percurso_adicional ?? 0)) : request.preco_tempo_excedido)}
                 </dd>
               </div>
+              {request.precificacao_v2 && (request.preco_percurso_adicional ?? 0) > 0 && <div className="flex justify-between gap-4 text-orange-700 dark:text-orange-400"><dt>Parada adicional</dt><dd>{formatCurrency(request.preco_percurso_adicional ?? 0)}</dd></div>}
               <div className="flex justify-between gap-4 border-t border-zinc-200 pt-3 dark:border-zinc-700">
                 <dt className="font-semibold text-zinc-700 dark:text-zinc-300">Total final</dt>
                 <dd className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
