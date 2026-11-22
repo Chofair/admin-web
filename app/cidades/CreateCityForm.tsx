@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { Plus } from 'lucide-react';
 import { createCity, type CityFormState } from './actions';
-import { CITY_FLAGS, UFS } from './constants';
+import { CITY_FLAGS, UFS, TARIFF_REGIONS } from './constants';
 
 const initial: CityFormState = { status: 'idle', message: '' };
 const inputClassName =
@@ -42,6 +42,14 @@ export default function CreateCityForm() {
           </select>
         </label>
       </div>
+      <label className="mt-4 block max-w-sm text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        Região tarifária da V2
+        <select name="regiao_tarifaria_v2" defaultValue={String(values?.regiao_tarifaria_v2 ?? '')} className={inputClassName}>
+          <option value="">Sem região</option>
+          {TARIFF_REGIONS.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}
+        </select>
+        <span className="mt-1 block text-xs font-normal text-zinc-500">Definir a tarifa não libera atendimento. Ative o serviço separadamente.</span>
+      </label>
       <fieldset className="mt-4">
         <legend className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Serviços ativos</legend>
         <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2">

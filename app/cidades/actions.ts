@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth';
-import { CITY_FLAGS, UFS } from './constants';
+import { CITY_FLAGS, UFS, TARIFF_REGIONS } from './constants';
+import { parseV2TariffForm } from '@/lib/regional-v2-tariffs';
 
 export type CityFormState = {
   status: 'idle' | 'success' | 'error';
@@ -15,6 +16,7 @@ function echo(formData: FormData) {
   return {
     cidade: String(formData.get('cidade') ?? ''),
     estado: String(formData.get('estado') ?? ''),
+    regiao_tarifaria_v2: String(formData.get('regiao_tarifaria_v2') ?? ''),
     ...Object.fromEntries(CITY_FLAGS.map(({ key }) => [key, formData.get(key) === 'on'])),
   };
 }
@@ -23,7 +25,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 
 type ParsedCity =
   | { error: string }
-  | { value: { cidade: string; estado: string } & Record<(typeof CITY_FLAGS)[number]['key'], boolean> };
+  | { value: { cidade: string; estado: string; regiao_tarifaria_v2: string | null } & Record<(typeof CITY_FLAGS)[number]['key'], boolean> };
 
 function parseCity(formData: FormData): ParsedCity {
   const cidade = String(formData.get('cidade') ?? '').trim().replace(/\s+/g, ' ');
@@ -37,7 +39,10 @@ function parseCity(formData: FormData): ParsedCity {
   const flags = Object.fromEntries(
     CITY_FLAGS.map(({ key }) => [key, formData.get(key) === 'on']),
   ) as Record<(typeof CITY_FLAGS)[number]['key'], boolean>;
-  return { value: { cidade, estado, ...flags } };
+  const regiao = String(formData.get('regiao_tarifaria_v2') ?? '');
+  if (regiao && !TARIFF_REGIONS.some(item => item.id === regiao)) return { error: 'Selecione uma região tarifária válida.' };
+  if (flags.ativo_cliente_v2 && !regiao) return { error: 'Para liberar a V2, selecione sua região tarifária.' };
+  return { value: { cidade, estado, regiao_tarifaria_v2: regiao || null, ...flags } };
 }
 
 function errorMessage(error: { code?: string; message: string }, fallback: string) {
@@ -100,4 +105,25 @@ export async function deleteCity(_state: CityFormState, formData: FormData): Pro
 
   revalidatePath('/cidades');
   return { status: 'success', message: 'Cidade excluída.' };
+}
+
+export async function updateV2Tariff(_state: CityFormState, formData: FormData): Promise<CityFormState> {
+  const parsed = parseV2TariffForm(formData);
+  if ('error' in parsed) return { status: 'error', message: parsed.error };
+  const { supabase } = await requireAdmin();
+  const { id, ...values } = parsed.value;
+  const { data, error } = await supabase.from('perfis_tarifarios_v2').update(values)
+    .eq('id', id).eq('updated_at', String(formData.get('updated_at') ?? '')).select('id');
+  if (error) return { status: 'error', message: errorMessage(error, 'Não foi possível salvar a tarifa.') };
+  if (!data?.length) return { status: 'error', message: 'A tarifa foi alterada por outra pessoa. Atualize a página e confira os valores.' };
+  revalidatePath('/cidades');
+  return { status: 'success', message: 'Tarifa salva. Corridas já contratadas mantêm seus valores.' };
+}
+
+export async function updateV2Activation(_state: CityFormState, formData: FormData): Promise<CityFormState> {
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase.from('configuracao_regional_v2').update({ ativa: formData.get('ativa') === 'on' }).eq('id', true).select('id');
+  if (error || !data?.length) return { status: 'error', message: 'Não foi possível alterar a ativação da precificação.' };
+  revalidatePath('/cidades');
+  return { status: 'success', message: 'Configuração salva. Contratos existentes permanecem inalterados.' };
 }
