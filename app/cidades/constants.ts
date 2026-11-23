@@ -14,6 +14,11 @@ export const CITY_FLAGS = [
 ] as const;
 
 export type CityFlagKey = (typeof CITY_FLAGS)[number]['key'];
+export const TARIFF_REGIONS = [
+  { id: 'vale', nome: 'Vale do Ribeira' },
+  { id: 'grande_sp', nome: 'Grande São Paulo' },
+  { id: 'padrao', nome: 'Padrão' },
+] as const;
 
 export type CityRow = Record<CityFlagKey, boolean> & {
   id: string;
@@ -21,4 +26,5 @@ export type CityRow = Record<CityFlagKey, boolean> & {
   estado: string;
   ativo_cliente: boolean;
   updated_at: string;
+  regiao_tarifaria_v2: string | null;
 };

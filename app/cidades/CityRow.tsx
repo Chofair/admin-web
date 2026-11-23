@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { deleteCity, updateCity, type CityFormState } from './actions';
-import { CITY_FLAGS, UFS, type CityRow as CityRowData } from './constants';
+import { CITY_FLAGS, UFS, TARIFF_REGIONS, type CityRow as CityRowData } from './constants';
 
 const initial: CityFormState = { status: 'idle', message: '' };
 const inputClassName =
@@ -34,6 +34,14 @@ export default function CityRow({ city }: { city: CityRowData }) {
         <select form={formId} name="estado" defaultValue={city.estado} aria-label="UF" className={inputClassName}>
           {UFS.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
         </select>
+      </td>
+      <td className="px-3 py-3">
+        <select form={formId} name="regiao_tarifaria_v2" defaultValue={city.regiao_tarifaria_v2 ?? ''}
+          aria-label={`Região tarifária da V2 em ${city.cidade}`} className={inputClassName}>
+          <option value="">Sem região</option>
+          {TARIFF_REGIONS.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}
+        </select>
+        {city.ativo_cliente_v2 && !city.regiao_tarifaria_v2 && <p className="mt-1 max-w-40 text-xs text-amber-700 dark:text-amber-300">V2 sem tarifa configurada</p>}
       </td>
       {CITY_FLAGS.map(({ key, label }) => (
         <td key={key} className="px-3 py-3 text-center">

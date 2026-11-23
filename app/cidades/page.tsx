@@ -4,7 +4,9 @@ import NavBar from '@/components/NavBar';
 import { requireAdmin } from '@/lib/auth';
 import CityRow from './CityRow';
 import CreateCityForm from './CreateCityForm';
-import { CITY_FLAGS, UFS, type CityFlagKey, type CityRow as CityRowData } from './constants';
+import { CITY_FLAGS, UFS, TARIFF_REGIONS, type CityFlagKey, type CityRow as CityRowData } from './constants';
+import V2Tariffs from './V2Tariffs';
+import type { V2Tariff } from '@/lib/regional-v2-tariffs';
 
 const inputClassName =
   'rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100';
@@ -12,7 +14,7 @@ const inputClassName =
 export default async function CidadesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; uf?: string; servico?: string }>;
+  searchParams: Promise<{ q?: string; uf?: string; servico?: string; regiao?: string }>;
 }) {
   const params = await searchParams;
   const search = (params.q ?? '').trim().slice(0, 100);
@@ -22,23 +24,30 @@ export default async function CidadesPage({
     : undefined;
 
   const { supabase } = await requireAdmin();
+  const region = TARIFF_REGIONS.some(item => item.id === params.regiao) ? params.regiao : params.regiao === 'sem_regiao' ? 'sem_regiao' : undefined;
+  const [tariffs, activation] = await Promise.all([
+    supabase.from('perfis_tarifarios_v2').select('*').order('nome'),
+    supabase.from('configuracao_regional_v2').select('ativa').eq('id', true).single(),
+  ]);
   let query = supabase
     .from('cidades_atendimento')
     .select(
-      'id, cidade, estado, ativo_cliente, ativo_cliente_v1, ativo_cliente_v2, ativo_cliente_v3, ativo_motorista, ativo_motorista_acessibilidade, ativo_vans, updated_at',
+      'id, cidade, estado, regiao_tarifaria_v2, ativo_cliente, ativo_cliente_v1, ativo_cliente_v2, ativo_cliente_v3, ativo_motorista, ativo_motorista_acessibilidade, ativo_vans, updated_at',
     )
     .order('estado')
     .order('cidade');
   if (search) query = query.ilike('cidade', `%${search.replace(/[\\%_]/g, '\\$&')}%`);
   if (uf) query = query.eq('estado', uf);
   if (service) query = query.eq(service, true);
+  if (region === 'sem_regiao') query = query.is('regiao_tarifaria_v2', null);
+  else if (region) query = query.eq('regiao_tarifaria_v2', region);
 
   const { data, error } = await query;
   if (error) {
     console.error('Erro ao listar cidades de atendimento:', { code: error.code, message: error.message });
   }
   const cities = (data ?? []) as CityRowData[];
-  const hasFilters = Boolean(search || uf || service);
+  const hasFilters = Boolean(search || uf || service || region);
 
   const summary = [
     { label: 'Cidades listadas', value: cities.length },
@@ -74,6 +83,7 @@ export default async function CidadesPage({
           ))}
         </div>
 
+        <V2Tariffs tariffs={(tariffs.data ?? []) as V2Tariff[]} active={Boolean(activation.data?.ativa)} unavailable={Boolean(tariffs.error || activation.error)} />
         <div className="mb-6">
           <CreateCityForm />
         </div>
@@ -97,6 +107,10 @@ export default async function CidadesPage({
           <button className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">
             Filtrar
           </button>
+          <select name="regiao" defaultValue={region ?? ''} aria-label="Filtrar por região tarifária" className={inputClassName}>
+            <option value="">Todas as regiões tarifárias</option><option value="sem_regiao">Sem região</option>
+            {TARIFF_REGIONS.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}
+          </select>
           {hasFilters && (
             <Link
               href="/cidades"
@@ -119,6 +133,7 @@ export default async function CidadesPage({
               <tr className="border-b border-zinc-100 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
                 <th className="px-4 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">Cidade</th>
                 <th className="px-4 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">UF</th>
+                <th className="px-3 py-3 text-left font-semibold text-zinc-600 dark:text-zinc-300">Tarifa V2</th>
                 {CITY_FLAGS.map(({ key, label }) => (
                   <th key={key} className="px-3 py-3 text-center font-semibold text-zinc-600 dark:text-zinc-300">
                     {label}
@@ -136,7 +151,7 @@ export default async function CidadesPage({
             <tbody>
               {cities.length === 0 ? (
                 <tr>
-                  <td colSpan={CITY_FLAGS.length + 4} className="px-4 py-10 text-center text-zinc-400">
+                  <td colSpan={CITY_FLAGS.length + 5} className="px-4 py-10 text-center text-zinc-400">
                     {hasFilters ? 'Nenhuma cidade encontrada com esses filtros' : 'Nenhuma cidade cadastrada'}
                   </td>
                 </tr>
