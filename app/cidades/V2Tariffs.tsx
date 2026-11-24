@@ -1,7 +1,7 @@
 'use client';
 import { useActionState } from 'react';
 import { updateV2Tariff, updateV2Activation, type CityFormState } from './actions';
-import { V2_TARIFF_FIELDS, type V2Tariff } from '@/lib/regional-v2-tariffs';
+import { V2_TARIFF_FIELDS, v2TimeCharges, type V2Tariff } from '@/lib/regional-v2-tariffs';
 const initial: CityFormState = { status: 'idle', message: '' };
 const inputClass = 'mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100';
 const buttonClass = 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50';
@@ -10,6 +10,8 @@ function Feedback({ state }: { state: CityFormState }) {
 }
 function TariffForm({ tariff }: { tariff: V2Tariff }) {
   const [state, action, pending] = useActionState(updateV2Tariff, initial);
+  const charges = v2TimeCharges(tariff);
+  const money = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   return <form action={action} className="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
     <h3 className="font-semibold">{tariff.nome}</h3>
     <input type="hidden" name="id" value={tariff.id} /><input type="hidden" name="nome" value={tariff.nome} />
@@ -21,6 +23,12 @@ function TariffForm({ tariff }: { tariff: V2Tariff }) {
       {V2_TARIFF_FIELDS.map(([key, label]) => <label key={key} className="text-sm">{label}
         <input className={inputClass} type="number" inputMode="decimal" name={key} min={key === 'fixa_centavos' ? '0' : '0.01'} max="10000" step="0.01" required defaultValue={(tariff[key] / 100).toFixed(2)} />
       </label>)}
+    </div>
+    <div className="space-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="font-medium">Referência da tarifa salva</p>
+      <p>Curta: permanência e excedente de {money(charges.baseBlockCents)} por 15 min, inclusive aos domingos.</p>
+      <p>Longa: excedente de {money(charges.baseBlockCents)} por 15 min, ou {money(charges.sundayBlockCents)} aos domingos. A permanência usa a tarifa horária proporcional.</p>
+      <p>Estimativa de 1 hora de extensão: {money(charges.baseExtensionCents)}; na Longa aos domingos, {money(charges.sundayExtensionCents)}.</p>
     </div>
     <div className="flex flex-wrap items-center gap-3"><button disabled={pending} className={buttonClass}>{pending ? 'Salvando...' : 'Salvar tarifa'}</button><Feedback state={state} /></div>
   </form>;
@@ -36,7 +44,7 @@ export default function V2Tariffs({ tariffs, active, unavailable }: { tariffs: V
         <button disabled={pending} className={buttonClass}>{pending ? 'Salvando...' : 'Salvar ativação'}</button><Feedback state={state} />
       </form>
       <div className="space-y-4">{tariffs.map(tariff => <TariffForm key={`${tariff.id}-${tariff.updated_at}`} tariff={tariff} />)}</div>
-      <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">Na curta, permanência e excedente custam R$ 5,71 por bloco de 15 min. Na longa, a permanência usa a parcela horária; o excedente custa R$ 5,71 por bloco, ou R$ 8,15 aos domingos. A região tarifária não libera atendimento.</p>
+      <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">Cada bloco de 15 min corresponde a um quarto da tarifa horária, arredondado ao centavo. A extensão estima quatro blocos. Os valores acima refletem a tarifa salva e serão atualizados após salvar. Contratos anteriores preservam suas condições. A região tarifária não libera atendimento.</p>
     </>}
   </details>;
 }

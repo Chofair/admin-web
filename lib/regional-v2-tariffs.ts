@@ -7,10 +7,16 @@ export const V2_TARIFF_FIELDS = [
   ['fixa_centavos', 'Parcela fixa da curta (R$)'],
   ['km_curta_centavos', 'Quilômetro da curta (R$)'],
   ['minimo_centavos', 'Preço mínimo (R$)'],
-  ['hora_centavos', 'Hora da longa — segunda a sábado (R$)'],
+  ['hora_centavos', 'Hora-base — Longa e adicionais da Curta (R$)'],
   ['domingo_hora_centavos', 'Hora da longa — domingo (R$)'],
   ['km_longa_centavos', 'Quilômetro da longa (R$)'],
 ] as const;
+export function v2TimeCharges(tariff: Pick<V2Tariff, 'hora_centavos' | 'domingo_hora_centavos'>) {
+  const baseBlockCents = Math.round(tariff.hora_centavos / 4);
+  const sundayBlockCents = Math.round(tariff.domingo_hora_centavos / 4);
+  return { baseBlockCents, sundayBlockCents,
+    baseExtensionCents: baseBlockCents * 4, sundayExtensionCents: sundayBlockCents * 4 };
+}
 function decimal(value: FormDataEntryValue | null, scale: number) {
   const text = String(value ?? '').trim().replace(',', '.');
   if (!new RegExp(`^\\d{1,7}(?:\\.\\d{1,${scale}})?$`).test(text)) return null;
